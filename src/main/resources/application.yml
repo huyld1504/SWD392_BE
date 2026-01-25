@@ -49,7 +49,7 @@ app:
     authorized-redirect-uri: ${FRONTEND_URL:http://localhost:3000}/auth/callback
   openapi:
     dev-url: http://localhost:8080
-    prod-url:
+    prod-url: ${BACKEND_PRODUCT_URL:http://localhost:8080}
 
 # Swagger/OpenAPI Configuration
 springdoc:

@@ -49,7 +49,7 @@ public class DataInitializer {
                 teacher.setProvider("local");
 
                 userRepository.save(teacher);
-                log.info("✅ Created test teacher user: teacher@test.com / password123");
+                log.info("Created test teacher user: teacher@test.com / password123");
             }
 
             // Create test admin user if not exists
@@ -63,10 +63,10 @@ public class DataInitializer {
                 admin.setProvider("local");
 
                 userRepository.save(admin);
-                log.info("✅ Created test admin user: admin@test.com / admin123");
+                log.info("Created test admin user: admin@test.com / admin123");
             }
 
-            log.info("🎉 Database initialization completed!");
+            log.info("Database initialization completed!");
         };
     }
 }

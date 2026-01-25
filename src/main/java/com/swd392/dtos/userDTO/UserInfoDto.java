@@ -1,4 +1,4 @@
-package com.swd392.dtos;
+package com.swd392.dtos.userDTO;
 
 import com.swd392.entities.User;
 import io.swagger.v3.oas.annotations.media.Schema;

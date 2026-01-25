@@ -1,17 +1,21 @@
 package com.swd392.services;
 
-import com.swd392.dtos.AuthenticationResponse;
-import com.swd392.dtos.LoginRequest;
-import com.swd392.dtos.UserInfoDto;
+import com.swd392.configs.RequestContext;
+import com.swd392.dtos.authDTO.AuthenticationResponse;
+import com.swd392.dtos.authDTO.LoginRequest;
+import com.swd392.dtos.authDTO.RegisterRequest;
+import com.swd392.dtos.userDTO.UserInfoDto;
 import com.swd392.entities.User;
+import com.swd392.exceptions.AppException;
 import com.swd392.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
@@ -19,41 +23,42 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
-    private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
 
     /**
      * Authenticate user with email and password
      */
     public AuthenticationResponse authenticateWithEmailPassword(LoginRequest loginRequest) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("[LAYER: SERVICE] Authenticating user: {}", loginRequest.getEmail());
+
+        // First check if user exists
+        User user = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new AppException("User not found with email: " + loginRequest.getEmail()));
+
+        // Check if user is active
+        if (user.getStatus() != User.UserStatus.ACTIVE) {
+            throw new AppException("Account is disabled");
+        }
+
+        // Check if user has a password (not OAuth-only user)
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            throw new AppException("Invalid login method");
+        }
+
         try {
-            // First check if user exists
-            User user = userRepository.findByEmail(loginRequest.getEmail())
-                    .orElseThrow(() -> new RuntimeException("User not found with email: " + loginRequest.getEmail()));
-
-            // Check if user is active
-            if (user.getStatus() != User.UserStatus.ACTIVE) {
-                throw new RuntimeException("User account is not active. Status: " + user.getStatus());
-            }
-
-            // Check if user has a password (not OAuth-only user)
-            if (user.getPassword() == null || user.getPassword().isEmpty()) {
-                throw new RuntimeException("User registered via OAuth. Please login with Google.");
-            }
-
             // Authenticate user credentials
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
-                            loginRequest.getPassword()
-                    )
-            );
+                            loginRequest.getPassword()));
 
             // Set authentication in security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -67,11 +72,11 @@ public class AuthService {
             return new AuthenticationResponse(jwt, userInfo);
 
         } catch (org.springframework.security.authentication.BadCredentialsException e) {
-            throw new RuntimeException("Invalid email or password");
+            throw new AppException("Invalid email or password");
         } catch (org.springframework.security.authentication.DisabledException e) {
-            throw new RuntimeException("User account is disabled");
+            throw new AppException("Account is disabled");
         } catch (org.springframework.security.authentication.LockedException e) {
-            throw new RuntimeException("User account is locked");
+            throw new AppException("Account is locked");
         }
     }
 
@@ -94,6 +99,35 @@ public class AuthService {
 
         // Create user info DTO
         UserInfoDto userInfo = UserInfoDto.fromUser(user);
+
+        return new AuthenticationResponse(jwt, userInfo);
+    }
+
+    public AuthenticationResponse registerWithEmailPassword(RegisterRequest registerRequest) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("[LAYER: SERVICE] Registering new user: {}", registerRequest.getEmail());
+
+        // First check if user exists
+        Optional<User> existingUser = userRepository.findByEmail(registerRequest.getEmail());
+        if (existingUser.isPresent()) {
+            throw new AppException("User already exists with email: " + registerRequest.getEmail());
+        }
+
+        // Create new user
+        User newUser = new User();
+        newUser.setEmail(registerRequest.getEmail());
+        newUser.setPassword(registerRequest.getPassword());
+        newUser.setFullName(registerRequest.getFullName());
+        newUser.setRole(registerRequest.getRole());
+        newUser.setStatus(User.UserStatus.ACTIVE);
+
+        User savedUser = userRepository.save(newUser);
+
+        // Generate JWT token
+        String jwt = jwtTokenProvider.generateTokenForUser(savedUser.getEmail());
+
+        // Create user info DTO
+        UserInfoDto userInfo = UserInfoDto.fromUser(savedUser);
 
         return new AuthenticationResponse(jwt, userInfo);
     }
@@ -146,7 +180,7 @@ public class AuthService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException("User not found with email: " + email));
 
         return UserInfoDto.fromUser(user);
     }
@@ -156,13 +190,11 @@ public class AuthService {
      */
     public Authentication createAuthentication(User user) {
         List<SimpleGrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
-        );
+                new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
 
         return new UsernamePasswordAuthenticationToken(
                 user.getEmail(),
                 null,
-                authorities
-        );
+                authorities);
     }
 }

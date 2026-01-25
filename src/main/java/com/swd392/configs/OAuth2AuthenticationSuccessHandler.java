@@ -1,7 +1,7 @@
 package com.swd392.configs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.swd392.dtos.AuthenticationResponse;
+import com.swd392.dtos.authDTO.AuthenticationResponse;
 import com.swd392.services.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

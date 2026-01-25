@@ -1,5 +1,7 @@
 package com.swd392.configs;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.swd392.dtos.common.ApiResponse;
 import com.swd392.services.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,17 +32,19 @@ public class SecurityConfig {
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final CustomUserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             @Lazy OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler,
             CustomUserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder
-    ) {
+            PasswordEncoder passwordEncoder,
+            ObjectMapper objectMapper) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
         this.userDetailsService = userDetailsService;
         this.passwordEncoder = passwordEncoder;
+        this.objectMapper = objectMapper;
     }
 
     @Bean
@@ -48,38 +52,39 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(sm ->
-                        sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .authorizeHttpRequests(request ->
-                        request.requestMatchers(
-                                        "/api/v1/auth/**",      // Authentication endpoints
-                                        "/api/auth/v1/**",      // Alternative auth path
-                                        "/hello/**",            // Health check
-                                        "/swagger-ui/**",       // Swagger UI
-                                        "/v3/api-docs/**",      // OpenAPI docs
-                                        "/swagger-ui.html",     // Swagger UI HTML
-                                        "/error"                // Error page
-                                ).permitAll()
-                                .anyRequest()
-                                .authenticated()
-                )
-                .oauth2Login(oauth2 ->
-                        oauth2
-                                .successHandler(oAuth2AuthenticationSuccessHandler)
-                                .failureUrl("/api/auth/oauth2/error")
-                )
-                .exceptionHandling(ex ->
-                        ex
-                                .accessDeniedHandler(((request, response, accessDeniedException) -> {
-                                    response.setStatus(403);
-                                    response.getWriter().write("Access Denied: " + accessDeniedException.getMessage());
-                                }))
-                                .authenticationEntryPoint(((request, response, authException) -> {
-                                    response.setStatus(401);
-                                    response.getWriter().write("Unauthorized: " + authException.getMessage());
-                                }))
-                );
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(request -> request.requestMatchers(
+                        "/api/v1/auth/**", 
+                        "/hello/**", 
+                        "/swagger-ui/**", 
+                        "/v3/api-docs/**",
+                        "/swagger-ui.html", 
+                        "/error"
+                ).permitAll()
+                        .anyRequest()
+                        .authenticated())
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                        .failureUrl("/api/v1/auth/oauth2/error"))
+                .exceptionHandling(ex -> ex
+                        .accessDeniedHandler(((request, response, accessDeniedException) -> {
+                            response.setStatus(403);
+                            response.setContentType("application/json");
+                            response.getWriter()
+                                    .write(objectMapper.writeValueAsString(ApiResponse.builder()
+                                            .success(false)
+                                            .message("Access Denied")
+                                            .build()));
+                        }))
+                        .authenticationEntryPoint(((request, response, authException) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json");
+                            response.getWriter()
+                                    .write(objectMapper.writeValueAsString(ApiResponse.builder()
+                                            .success(false)
+                                            .message("Unauthorized")
+                                            .build()));
+                        })));
 
         // Add JWT filter before UsernamePasswordAuthenticationFilter
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

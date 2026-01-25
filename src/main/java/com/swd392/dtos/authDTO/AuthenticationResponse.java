@@ -1,4 +1,6 @@
-package com.swd392.dtos;
+package com.swd392.dtos.authDTO;
+
+import com.swd392.dtos.userDTO.UserInfoDto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
