@@ -5,8 +5,8 @@ spring:
   application:
     name: SWD392_BE
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL}
+    driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DB_USER}
     password: ${DB_PASSWORD}
   jpa:
@@ -16,6 +16,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
 
   # OAuth2 Configuration
   security:

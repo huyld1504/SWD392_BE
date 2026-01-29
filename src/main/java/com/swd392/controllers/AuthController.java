@@ -6,7 +6,7 @@ import com.swd392.dtos.authDTO.LoginRequest;
 import com.swd392.dtos.authDTO.RegisterRequest;
 import com.swd392.dtos.common.ApiResponse;
 import com.swd392.dtos.userDTO.UserInfoDto;
-import com.swd392.services.AuthService;
+import com.swd392.services.interfaces.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
