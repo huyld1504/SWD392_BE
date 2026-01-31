@@ -10,9 +10,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "blogs")
+@Table(name = "diagrams")
 @Getter @Setter
-public class Blog {
+public class Diagram {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

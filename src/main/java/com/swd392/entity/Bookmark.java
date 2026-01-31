@@ -1,4 +1,4 @@
 package com.swd392.entity;
 
-public class BookMark {
+public class Bookmark {
 }
