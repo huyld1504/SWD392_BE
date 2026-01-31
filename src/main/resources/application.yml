@@ -6,9 +6,9 @@ spring:
     name: SWD392_BE
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://localhost:3306/fptgo
+    username: root
+    password: 123456
   jpa:
     hibernate:
       ddl-auto: update
@@ -16,8 +16,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
 secret:
   jwt:
-    secret-key: ${JWT_SECRET_KEY}
-    expiration-time: ${JWT_EXPIRATION_MS} # 1 day in milliseconds
+    secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    expiration-time: 3600000 # 1 gio in milliseconds

@@ -28,9 +28,6 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @Lob
-    private String avatar;
-
     @Column(nullable = false)
     private String password;
 
