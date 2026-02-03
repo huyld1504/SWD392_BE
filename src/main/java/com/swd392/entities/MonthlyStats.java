@@ -1,10 +1,10 @@
-package com.swd392.entity;
+package com.swd392.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+
 @Entity
 @Table(
         name = "monthly_stats",

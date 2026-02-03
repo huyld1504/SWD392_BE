@@ -1,4 +1,4 @@
-package com.swd392.entity;
+package com.swd392.entities;
 
 import jakarta.persistence.*;
 import lombok.Getter;

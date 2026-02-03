@@ -1,4 +1,4 @@
-package com.swd392.entity;
+package com.swd392.entities;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -9,23 +9,26 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "wallets")
+@Table(name = "subjects")
 @Getter @Setter
-public class Wallet {
+public class Subject {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User owner;
+    @Column(length = 150, nullable = false)
+    private String name;
 
-    private Integer blueBalance = 0;
+    @Column(name = "subject_code", length = 50, nullable = false, unique = true)
+    private String subjectCode;
 
-    private Integer goldBalance = 0;
+    @Lob
+    private String description;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
+
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 }

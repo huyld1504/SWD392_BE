@@ -1,10 +1,11 @@
 package com.swd392.service;
 
-import com.swd392.dto.LoginRequestDTO;
-import com.swd392.dto.LoginResponse;
-import com.swd392.dto.RegisterRequestDTO;
+
+import com.swd392.dtos.authDTO.AuthenticationResponse;
+import com.swd392.dtos.authDTO.LoginRequest;
+import com.swd392.dtos.authDTO.RegisterRequest;
 
 public interface AuthService {
-    void register(RegisterRequestDTO req);
-    LoginResponse login(LoginRequestDTO req);
+    void register(RegisterRequest req);
+    AuthenticationResponse login(LoginRequest req);
 }

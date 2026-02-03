@@ -111,7 +111,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthenticationResponse authenticateWithGoogle(OAuth2User oauth2User) {
         RequestContext.setCurrentLayer("SERVICE");
-        
+
         String email = oauth2User.getAttribute("email");
         String name = oauth2User.getAttribute("name");
         String picture = oauth2User.getAttribute("picture");
@@ -172,9 +172,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public UserInfoDto getCurrentUser() {
         RequestContext.setCurrentLayer("SERVICE");
-        
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
+
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new AppException("User not authenticated", HttpStatus.UNAUTHORIZED);
         }
