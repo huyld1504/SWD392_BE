@@ -5,10 +5,10 @@ spring:
   application:
     name: SWD392_BE
   datasource:
-    url: ${DB_URL}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/swd392_be?useSSL=false&serverTimezone=UTC}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:12345}
   jpa:
     hibernate:
       ddl-auto: update
@@ -47,7 +47,7 @@ secret:
 # App Configuration
 app:
   oauth2:
-    authorized-redirect-uri: ${FRONTEND_URL:http://localhost:3000}/auth/callback
+    authorized-redirect-uri: ${FRONTEND_URL:http://localhost:3000}/auth/callback}
   openapi:
     dev-url: http://localhost:8080
     prod-url: ${BACKEND_PRODUCT_URL:http://localhost:8080}
