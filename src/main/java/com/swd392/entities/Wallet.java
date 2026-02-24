@@ -3,30 +3,61 @@ package com.swd392.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "wallets")
-@Getter @Setter
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Wallet {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "wallet_id")
+    private Integer walletId;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User owner;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    private Integer blueBalance = 0;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "wallet_type", nullable = false)
+    private WalletType walletType;
 
-    private Integer goldBalance = 0;
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Currency currency;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal balance = BigDecimal.ZERO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private WalletStatus status = WalletStatus.ACTIVE;
+
+    @OneToMany(mappedBy = "senderWallet", cascade = CascadeType.ALL)
+    private List<Transaction> sentTransactions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "receiverWallet", cascade = CascadeType.ALL)
+    private List<Transaction> receivedTransactions = new ArrayList<>();
+
+    public enum WalletType {
+        MAIN, EARNED
+    }
+
+    public enum Currency {
+        BLUE, GOLD
+    }
+
+    public enum WalletStatus {
+        ACTIVE, LOCKED
+    }
 }
 

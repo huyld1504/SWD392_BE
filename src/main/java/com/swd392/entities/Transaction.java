@@ -3,59 +3,61 @@ package com.swd392.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "transactions")
-@Getter @Setter
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Transaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "diagram_id")
-    private Diagram diagram;
+    @Column(name = "transaction_id")
+    private Integer transactionId;
 
     @ManyToOne
     @JoinColumn(name = "sender_wallet_id")
     private Wallet senderWallet;
 
     @ManyToOne
-    @JoinColumn(name = "receiver_wallet_id")
+    @JoinColumn(name = "receiver_wallet_id", nullable = false)
     private Wallet receiverWallet;
 
-    @Column(nullable = false)
-    private Integer amount;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "coin_type", nullable = false)
-    private CoinType coinType;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TxType type;
+    private Currency currency;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Status status;
+    @Column(name = "transaction_type", nullable = false)
+    private TransactionType transactionType;
 
     @CreationTimestamp
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public enum CoinType {
+    @OneToOne(mappedBy = "transaction")
+    private UserFeeding userFeeding;
+
+    @OneToOne(mappedBy = "transaction")
+    private Donation donation;
+
+    public enum Currency {
         BLUE, GOLD
     }
 
-    public enum TxType {
-        DONATE, REWARD, EARN
-    }
-
-    public enum Status {
-        PENDING, SUCCESS, CANCELED
+    public enum TransactionType {
+        FEEDING, DONATE, REWARD, RESET
     }
 }
 

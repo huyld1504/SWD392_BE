@@ -12,13 +12,13 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "bookmarks")
+@Table(name = "user_subjects")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@IdClass(Bookmark.BookmarkId.class)
-public class Bookmark {
+@IdClass(UserSubject.UserSubjectId.class)
+public class UserSubject {
 
     @Id
     @ManyToOne
@@ -27,34 +27,33 @@ public class Bookmark {
 
     @Id
     @ManyToOne
-    @JoinColumn(name = "article_id", nullable = false)
-    private Article article;
+    @JoinColumn(name = "subject_id", nullable = false)
+    private Subject subject;
 
     @CreationTimestamp
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "enrolled_at")
+    private LocalDateTime enrolledAt;
 
     // Composite Key Class
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class BookmarkId implements Serializable {
+    public static class UserSubjectId implements Serializable {
         private Long user;
-        private Integer article;
+        private Integer subject;
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            BookmarkId that = (BookmarkId) o;
-            return Objects.equals(user, that.user) && Objects.equals(article, that.article);
+            UserSubjectId that = (UserSubjectId) o;
+            return Objects.equals(user, that.user) && Objects.equals(subject, that.subject);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(user, article);
+            return Objects.hash(user, subject);
         }
     }
 }
-

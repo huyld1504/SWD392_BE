@@ -3,10 +3,9 @@ package com.swd392.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "subjects")
@@ -15,21 +14,22 @@ public class Subject {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(length = 150, nullable = false)
-    private String name;
+    @Column(name = "subject_id")
+    private Integer subjectId;
 
     @Column(name = "subject_code", length = 50, nullable = false, unique = true)
     private String subjectCode;
 
+    @Column(length = 150, nullable = false)
+    private String name;
+
     @Lob
     private String description;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
+    private List<Topic> topics = new ArrayList<>();
 
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
+    private List<UserSubject> userSubjects = new ArrayList<>();
 }
 
