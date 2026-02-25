@@ -10,6 +10,7 @@ import com.swd392.services.JwtTokenProvider;
 import com.swd392.services.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,9 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
+
+    @Value("${FRONTEND_URL:http://localhost:3000}")
+    private String frontEndURL;
 
     @Override
     public Optional<User> findByEmail(String email) {
@@ -100,7 +104,7 @@ public class UserServiceImpl implements UserService {
 
         String token = jwtTokenProvider.generateResetToken(email);
 
-        String resetLink = "${FRONTEND_URL}/reset-password?token=" + token;
+        String resetLink = frontEndURL + "/reset-password?token=" + token;
 
         emailService.sendResetEmail(email, resetLink);
     }

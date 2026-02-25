@@ -40,17 +40,16 @@ spring:
 
   #App Password
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: datnpse182125@fpt.edu.vn
-    password: cndkwqjqfraoyjlm
+    host: ${EMAIL_HOST:smtp.gmail.com}
+    port: ${EMAIL_PORT:587}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
-#    cndkwqjqfraoyjlm
 # JWT Configuration
 secret:
   jwt:
