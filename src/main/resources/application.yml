@@ -6,9 +6,9 @@ spring:
     name: SWD392_BE
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${DB_URL:jdbc:mysql://localhost:3306/swd392_be?useSSL=false&serverTimezone=UTC}
-    username: ${DB_USER:root}
-    password: ${DB_PASSWORD:12345}
+    url: jdbc:mysql://localhost:3306/swd392_be?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
   jpa:
     hibernate:
       ddl-auto: update
@@ -37,17 +37,31 @@ spring:
             token-uri: https://www.googleapis.com/oauth2/v4/token
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
+  #App Password
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: datnpse182125@fpt.edu.vn
+    password: cndkwqjqfraoyjlm
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+#    cndkwqjqfraoyjlm
 
 # JWT Configuration
 secret:
   jwt:
-    secret-key: ${JWT_SECRET_KEY}
-    expiration-time: ${JWT_EXPIRATION_MS} # 1 day in milliseconds
+    secret-key: SWD392_BE_JWT_SecretKey_2026_abcdefghijklmnopqrstuvwxyz1234567890VerySecureKey!
+    expiration-time: 3600000 # 1 day in milliseconds
+    reset-expiration-time: 900000   # 15 phút
 
 # App Configuration
 app:
   oauth2:
-    authorized-redirect-uri: ${FRONTEND_URL:http://localhost:3000}/auth/callback}
+    authorized-redirect-uri: ${FRONTEND_URL:http://localhost:3000}/auth/callback
   openapi:
     dev-url: http://localhost:8080
     prod-url: ${BACKEND_PRODUCT_URL:http://localhost:8080}
