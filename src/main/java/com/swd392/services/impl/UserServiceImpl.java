@@ -73,6 +73,8 @@ public class UserServiceImpl implements UserService {
 
     //For change password
     public void changePassword(String email, ChangePasswordRequest request) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("Changing password for user: {}", email);
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException("User not found"));
@@ -90,18 +92,22 @@ public class UserServiceImpl implements UserService {
 
     //For reset password
     public void forgotPassword(String email) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("Processing forgot password for email: {}", email);
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException("User not found"));
 
         String token = jwtTokenProvider.generateResetToken(email);
 
-        String resetLink = "http://localhost:3000/reset-password?token=" + token;
+        String resetLink = "${FRONTEND_URL}/reset-password?token=" + token;
 
         emailService.sendResetEmail(email, resetLink);
     }
 
     public void resetPassword(ResetPasswordRequest request) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("Resetting password for token: {}", request.getToken());
 
         String token = request.getToken();
 
