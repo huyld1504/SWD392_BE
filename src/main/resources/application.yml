@@ -38,11 +38,25 @@ spring:
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
 
+  #App Password
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: datnpse182125@fpt.edu.vn
+    password: cndkwqjqfraoyjlm
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+#    cndkwqjqfraoyjlm
 # JWT Configuration
 secret:
   jwt:
     secret-key: ${JWT_SECRET_KEY}
     expiration-time: ${JWT_EXPIRATION_MS} # 1 day in milliseconds
+    reset-expiration-time: 900000   # 15 phút
 
 # App Configuration
 app:
@@ -65,3 +79,8 @@ springdoc:
     filter: true
     syntaxHighlight:
       activated: true
+
+
+
+
+

@@ -55,8 +55,10 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(request -> request.requestMatchers(
                         "/api/v1/auth/**", 
-                        "/hello/**", 
-                        "/swagger-ui/**", 
+                        "/hello/**",
+                        "/api/v1/users/forgot-password",     //  THÊM MỚI
+                        "/api/v1/users/reset-password",
+                        "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/swagger-ui.html", 
                         "/error"
@@ -73,7 +75,7 @@ public class SecurityConfig {
                             response.getWriter()
                                     .write(objectMapper.writeValueAsString(ApiResponse.builder()
                                             .success(false)
-                                            .message("Access Denied")
+                                            .message("Access Denied! You don't have permission to access this resource.")
                                             .build()));
                         }))
                         .authenticationEntryPoint(((request, response, authException) -> {
@@ -82,7 +84,7 @@ public class SecurityConfig {
                             response.getWriter()
                                     .write(objectMapper.writeValueAsString(ApiResponse.builder()
                                             .success(false)
-                                            .message("Unauthorized")
+                                            .message("Unauthorized! Please login to access this resource.")
                                             .build()));
                         })));
 
@@ -108,7 +110,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:3000", "http://localhost:3001"));
+        configuration.setAllowedOriginPatterns(List.of("&{FRONTEND_URL}"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

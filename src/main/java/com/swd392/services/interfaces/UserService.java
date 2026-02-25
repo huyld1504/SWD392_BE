@@ -1,5 +1,7 @@
 package com.swd392.services.interfaces;
 
+import com.swd392.dtos.userDTO.ChangePasswordRequest;
+import com.swd392.dtos.userDTO.ResetPasswordRequest;
 import com.swd392.entities.User;
 
 import java.util.Optional;
@@ -33,4 +35,17 @@ public interface UserService {
      * @return Updated user
      */
     User updateUser(User user);
+
+    /**
+     * Change user password
+     * @param email User email
+     * @param request Change password request
+     */
+    void changePassword(String email, ChangePasswordRequest request);
+
+    /******* Reset Password ****** */
+    void resetPassword(ResetPasswordRequest request);
+
+    /******* Forgot Password ****** */
+    void forgotPassword(String email);
 }

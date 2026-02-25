@@ -18,6 +18,10 @@ public class JwtTokenProvider {
     @Value("${secret.jwt.expiration-time}")
     private long jwtExpirationMs;
 
+    // For reset password
+    @Value("${secret.jwt.reset-expiration-time}")
+    private long resetExpirationMs;
+
     public String generateToken(Authentication authentication) {
         String email = authentication.getName();
         Date expiryDate = new Date(System.currentTimeMillis() + jwtExpirationMs);
@@ -72,5 +76,32 @@ public class JwtTokenProvider {
 
     private SecretKey getSignInKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    public String generateResetToken(String email) {
+
+        Date expiryDate = new Date(System.currentTimeMillis() + resetExpirationMs);
+
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("type", "RESET_PASSWORD")
+                .setIssuedAt(new Date())
+                .setExpiration(expiryDate)
+                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public boolean validateResetToken(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getSignInKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            return "RESET_PASSWORD".equals(claims.get("type"));
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
