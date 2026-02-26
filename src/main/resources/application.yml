@@ -50,6 +50,13 @@ spring:
           auth: true
           starttls:
             enable: true
+
+# Cloudinary Configuration
+cloudinary:
+  cloud_name: ${CLOUDINARY_CLOUD_NAME}
+  api_key: ${CLOUDINARY_API_KEY}
+  api_secret: ${CLOUDINARY_SECRET_KEY}
+
 # JWT Configuration
 secret:
   jwt:
