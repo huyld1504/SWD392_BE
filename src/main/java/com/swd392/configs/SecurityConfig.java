@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -61,7 +62,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(request -> request.requestMatchers(
+                .authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.OPTIONS, "/**")
+                .permitAll()
+                .requestMatchers(
                         "/api/v1/auth/**", 
                         "/hello/**",
                         "/api/v1/users/forgot-password",
@@ -71,7 +74,7 @@ public class SecurityConfig {
                         "/swagger-ui.html", 
                         "/error"
                 ).permitAll()
-                        .anyRequest()
+                        .anyRequest() 
                         .authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2AuthenticationSuccessHandler)
