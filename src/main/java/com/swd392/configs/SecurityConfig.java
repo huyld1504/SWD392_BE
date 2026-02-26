@@ -3,18 +3,12 @@ package com.swd392.configs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swd392.dtos.common.ApiResponse;
 import com.swd392.services.CustomUserDetailsService;
-<<<<<<< HEAD
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
-=======
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
->>>>>>> 351f2431c55d70f0082bb6930c86d8050fe7392d
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -37,15 +31,12 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-<<<<<<< HEAD
-=======
     @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
     @Value("${app.cors.allowed-methods}")
     private List<String> allowedMethods;
 
->>>>>>> 351f2431c55d70f0082bb6930c86d8050fe7392d
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final CustomUserDetailsService userDetailsService;
