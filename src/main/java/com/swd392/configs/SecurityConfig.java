@@ -3,6 +3,8 @@ package com.swd392.configs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swd392.dtos.common.ApiResponse;
 import com.swd392.services.CustomUserDetailsService;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -27,6 +29,12 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${app.cors.allowed-origins}")
+    private List<String> allowedOrigins;
+
+    @Value("${app.cors.allowed-methods}")
+    private List<String> allowedMethods;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
@@ -56,7 +64,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> request.requestMatchers(
                         "/api/v1/auth/**", 
                         "/hello/**",
-                        "/api/v1/users/forgot-password",     //  THÊM MỚI
+                        "/api/v1/users/forgot-password",
                         "/api/v1/users/reset-password",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
@@ -110,8 +118,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("&{FRONTEND_URL}"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedOriginPatterns(allowedOrigins);
+        configuration.setAllowedMethods(allowedMethods);
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
