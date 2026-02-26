@@ -24,8 +24,8 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+            client-id: ${GOOGLE_CLIENT_ID:default-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:default-client-secret}
             scope:
               - openid
               - email
@@ -42,8 +42,8 @@ spring:
   mail:
     host: ${EMAIL_HOST:smtp.gmail.com}
     port: ${EMAIL_PORT:587}
-    username: ${EMAIL_USERNAME}
-    password: ${EMAIL_PASSWORD}
+    username: ${EMAIL_USERNAME:noreply@example.com}
+    password: ${EMAIL_PASSWORD:default}
     properties:
       mail:
         smtp:
@@ -53,16 +53,16 @@ spring:
 
 # Cloudinary Configuration
 cloudinary:
-  cloud_name: ${CLOUDINARY_CLOUD_NAME}
-  api_key: ${CLOUDINARY_API_KEY}
-  api_secret: ${CLOUDINARY_SECRET_KEY}
+  cloud_name: ${CLOUDINARY_CLOUD_NAME:default}
+  api_key: ${CLOUDINARY_API_KEY:default}
+  api_secret: ${CLOUDINARY_SECRET_KEY:default}
 
 # JWT Configuration
 secret:
   jwt:
-    secret-key: ${JWT_SECRET_KEY}
-    expiration-time: ${JWT_EXPIRATION_MS} # 1 day in milliseconds
-    reset-expiration-time: 900000 # 15 phút
+    secret-key: ${JWT_SECRET_KEY:default-secret-key-for-development-only-change-in-production}
+    expiration-time: ${JWT_EXPIRATION_MS:86400000} # 1 day in milliseconds
+    reset-expiration-time: 900000
 
 # App Configuration
 app:
