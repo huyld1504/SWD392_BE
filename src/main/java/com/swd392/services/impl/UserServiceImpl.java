@@ -99,7 +99,7 @@ public class UserServiceImpl implements UserService {
         RequestContext.setCurrentLayer("SERVICE");
         log.info("Processing forgot password for email: {}", email);
 
-        User user = userRepository.findByEmail(email)
+        userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException("User not found"));
 
         String token = jwtTokenProvider.generateResetToken(email);

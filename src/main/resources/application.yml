@@ -38,6 +38,13 @@ spring:
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
 
+  # Multipart file upload
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 25MB
+
   #App Password
   mail:
     host: ${EMAIL_HOST:smtp.gmail.com}
