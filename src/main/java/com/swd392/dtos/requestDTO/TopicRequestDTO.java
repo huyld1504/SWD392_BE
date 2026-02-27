@@ -9,13 +9,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ArticleRequestDTO {
+public class TopicRequestDTO {
 
-        @NotNull(message = "TopicId is required")
-        private Integer topicId;
+  @NotNull(message = "SubjectId is required")
+  private Integer subjectId;
 
-        @NotBlank(message = "Title must not be blank")
-        private String title;
+  @NotBlank(message = "Name must not be blank")
+  private String name;
 
-        private String contentBody;
+  private String description;
 }

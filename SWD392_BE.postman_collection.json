@@ -1,0 +1,740 @@
+{
+	"info": {
+		"_postman_id": "swd392-be-collection",
+		"name": "SWD392_BE API",
+		"description": "API collection for SWD392 Backend Application",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"description": "Authentication management APIs",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.token) {",
+									"        pm.collectionVariables.set('token', jsonData.data.token);",
+									"        console.log('Token saved successfully');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "Authenticate user with email and password credentials. Returns JWT token and user information."
+					},
+					"response": [
+						{
+							"name": "Login Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"tokenType\": \"Bearer\",\n        \"user\": {\n            \"userId\": 1,\n            \"fullName\": \"John Doe\",\n            \"email\": \"user@example.com\",\n            \"role\": \"STUDENT\",\n            \"status\": \"ACTIVE\",\n            \"provider\": \"local\",\n            \"avatarUrl\": null,\n            \"createdAt\": \"2026-01-23T10:30:00\"\n        }\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.token) {",
+									"        pm.collectionVariables.set('token', jsonData.data.token);",
+									"        console.log('Token saved successfully after registration');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"newuser@example.com\",\n    \"password\": \"password123\",\n    \"fullName\": \"New User\",\n    \"role\": \"STUDENT\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "register"]
+						},
+						"description": "Register a new user with email and password credentials. Role can be: STUDENT, LECTURE, ADMIN."
+					},
+					"response": [
+						{
+							"name": "Register Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Registration successful\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"tokenType\": \"Bearer\",\n        \"user\": {\n            \"userId\": 2,\n            \"fullName\": \"New User\",\n            \"email\": \"newuser@example.com\",\n            \"role\": \"STUDENT\",\n            \"status\": \"ACTIVE\",\n            \"provider\": \"local\",\n            \"avatarUrl\": null,\n            \"createdAt\": \"2026-02-27T10:30:00\"\n        }\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Current User (Me)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "me"]
+						},
+						"description": "Retrieve the authenticated user's profile information. Requires valid JWT token. Roles: STUDENT, LECTURE, ADMIN."
+					},
+					"response": [
+						{
+							"name": "Get Current User Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"User information retrieved successfully\",\n    \"data\": {\n        \"userId\": 1,\n        \"fullName\": \"John Doe\",\n        \"email\": \"user@example.com\",\n        \"role\": \"STUDENT\",\n        \"status\": \"ACTIVE\",\n        \"provider\": \"local\",\n        \"avatarUrl\": null,\n        \"createdAt\": \"2026-01-23T10:30:00\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Google OAuth2 Login",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/oauth2/google",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "oauth2", "google"]
+						},
+						"description": "Redirects to Google for OAuth2 authentication. Users will be redirected to Google login page (HTTP 302)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"description": "User management APIs",
+			"item": [
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"oldPassword\": \"currentPassword123\",\n    \"newPassword\": \"newPassword456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/change-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "change-password"]
+						},
+						"description": "Change the authenticated user's password. Requires valid JWT token."
+					},
+					"response": [
+						{
+							"name": "Change Password Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Password changed successfully\",\n    \"timestamp\": \"1740652800000\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/forgot-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "forgot-password"]
+						},
+						"description": "Request a password reset email. Sends a reset token to the provided email address."
+					},
+					"response": [
+						{
+							"name": "Forgot Password Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Reset password email sent\",\n    \"timestamp\": \"1740652800000\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"reset-token-from-email\",\n    \"newPassword\": \"newSecurePassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/reset-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "reset-password"]
+						},
+						"description": "Reset password using the token received via email from the forgot-password endpoint."
+					},
+					"response": [
+						{
+							"name": "Reset Password Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Password reset successfully\",\n    \"timestamp\": \"1740652800000\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Articles",
+			"description": "Article management APIs",
+			"item": [
+				{
+					"name": "Create Article",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "topicId",
+									"value": "1",
+									"type": "text",
+									"description": "ID of the topic (required)"
+								},
+								{
+									"key": "title",
+									"value": "My Article Title",
+									"type": "text",
+									"description": "Title of the article (required)"
+								},
+								{
+									"key": "contentBody",
+									"value": "This is the content body of the article.",
+									"type": "text",
+									"description": "Content body of the article"
+								},
+								{
+									"key": "diagrams",
+									"type": "file",
+									"src": [],
+									"description": "Diagram files to upload (optional, multiple allowed)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/articles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "articles"]
+						},
+						"description": "Create a new article with optional diagram file uploads. Roles: STUDENT, LECTURE. Content-Type: multipart/form-data."
+					},
+					"response": [
+						{
+							"name": "Create Article Success",
+							"status": "Created",
+							"code": 201,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Article created successfully\",\n    \"data\": {\n        \"articleId\": 1,\n        \"title\": \"My Article Title\",\n        \"contentBody\": \"This is the content body of the article.\",\n        \"status\": \"PENDING\",\n        \"topicId\": 1,\n        \"topicName\": \"Topic Name\",\n        \"author\": {\n            \"userId\": 1,\n            \"name\": \"John Doe\",\n            \"email\": \"user@example.com\",\n            \"avatarUrl\": null\n        },\n        \"approvedBy\": null,\n        \"diagrams\": [],\n        \"createdAt\": \"2026-02-27T10:30:00\",\n        \"approvedAt\": null\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-02-27T10:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Article By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/articles/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "articles", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "Article ID"
+								}
+							]
+						},
+						"description": "Retrieve a specific article by its ID."
+					},
+					"response": [
+						{
+							"name": "Get Article Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Article retrieved successfully\",\n    \"data\": {\n        \"articleId\": 1,\n        \"title\": \"My Article Title\",\n        \"contentBody\": \"This is the content body of the article.\",\n        \"status\": \"APPROVED\",\n        \"topicId\": 1,\n        \"topicName\": \"Topic Name\",\n        \"author\": {\n            \"userId\": 1,\n            \"name\": \"John Doe\",\n            \"email\": \"user@example.com\",\n            \"avatarUrl\": null\n        },\n        \"approvedBy\": {\n            \"userId\": 2,\n            \"name\": \"Admin User\",\n            \"email\": \"admin@example.com\",\n            \"avatarUrl\": null\n        },\n        \"diagrams\": [\n            {\n                \"diagramId\": 1,\n                \"imageUrl\": \"https://res.cloudinary.com/xxx/image/upload/diagram1.png\",\n                \"caption\": null,\n                \"sortOrder\": 1\n            }\n        ],\n        \"createdAt\": \"2026-02-27T10:30:00\",\n        \"approvedAt\": \"2026-02-27T11:00:00\"\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-02-27T10:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get All Articles",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/articles?keyword=&page=0&size=10&sort=createdAt&direction=desc",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "articles"],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "",
+									"description": "Search keyword (optional)"
+								},
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (default: 0)"
+								},
+								{
+									"key": "size",
+									"value": "10",
+									"description": "Page size (default: 10)"
+								},
+								{
+									"key": "sort",
+									"value": "createdAt",
+									"description": "Sort field (default: createdAt)"
+								},
+								{
+									"key": "direction",
+									"value": "desc",
+									"description": "Sort direction: asc or desc (default: desc)"
+								}
+							]
+						},
+						"description": "Retrieve all articles with pagination and search. Supports keyword search, sorting, and pagination."
+					},
+					"response": [
+						{
+							"name": "Get All Articles Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Articles retrieved successfully\",\n    \"data\": {\n        \"totalItems\": 1,\n        \"totalPages\": 1,\n        \"currentPage\": 0,\n        \"pageSize\": 10,\n        \"data\": [\n            {\n                \"articleId\": 1,\n                \"title\": \"My Article Title\",\n                \"contentBody\": \"This is the content body.\",\n                \"status\": \"APPROVED\",\n                \"topicId\": 1,\n                \"topicName\": \"Topic Name\",\n                \"author\": {\n                    \"userId\": 1,\n                    \"name\": \"John Doe\",\n                    \"email\": \"user@example.com\",\n                    \"avatarUrl\": null\n                },\n                \"approvedBy\": {\n                    \"userId\": 2,\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\",\n                    \"avatarUrl\": null\n                },\n                \"diagrams\": [],\n                \"createdAt\": \"2026-02-27T10:30:00\",\n                \"approvedAt\": \"2026-02-27T11:00:00\"\n            }\n        ]\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-02-27T10:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Update Article",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"topicId\": 1,\n    \"title\": \"Updated Article Title\",\n    \"contentBody\": \"Updated content body of the article.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/articles/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "articles", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "Article ID"
+								}
+							]
+						},
+						"description": "Update an existing article by its ID."
+					},
+					"response": [
+						{
+							"name": "Update Article Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Article updated successfully\",\n    \"data\": {\n        \"articleId\": 1,\n        \"title\": \"Updated Article Title\",\n        \"contentBody\": \"Updated content body of the article.\",\n        \"status\": \"PENDING\",\n        \"topicId\": 1,\n        \"topicName\": \"Topic Name\",\n        \"author\": {\n            \"userId\": 1,\n            \"name\": \"John Doe\",\n            \"email\": \"user@example.com\",\n            \"avatarUrl\": null\n        },\n        \"approvedBy\": null,\n        \"diagrams\": [],\n        \"createdAt\": \"2026-02-27T10:30:00\",\n        \"approvedAt\": null\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-02-27T10:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Delete Article",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/articles/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "articles", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "Article ID"
+								}
+							]
+						},
+						"description": "Delete an article by its ID."
+					},
+					"response": [
+						{
+							"name": "Delete Article Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Article deleted successfully\",\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-02-27T10:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Approve Article",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/articles/:id/approve",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "articles", ":id", "approve"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "Article ID"
+								}
+							]
+						},
+						"description": "Approve an article. Roles: ADMIN, LECTURE."
+					},
+					"response": [
+						{
+							"name": "Approve Article Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Article approved successfully\",\n    \"data\": {\n        \"articleId\": 1,\n        \"title\": \"My Article Title\",\n        \"contentBody\": \"This is the content body.\",\n        \"status\": \"APPROVED\",\n        \"topicId\": 1,\n        \"topicName\": \"Topic Name\",\n        \"author\": {\n            \"userId\": 1,\n            \"name\": \"John Doe\",\n            \"email\": \"user@example.com\",\n            \"avatarUrl\": null\n        },\n        \"approvedBy\": {\n            \"userId\": 2,\n            \"name\": \"Admin User\",\n            \"email\": \"admin@example.com\",\n            \"avatarUrl\": null\n        },\n        \"diagrams\": [],\n        \"createdAt\": \"2026-02-27T10:30:00\",\n        \"approvedAt\": \"2026-02-27T11:00:00\"\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-02-27T10:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Reject Article",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/articles/:id/reject",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "articles", ":id", "reject"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "Article ID"
+								}
+							]
+						},
+						"description": "Reject an article. Roles: ADMIN, LECTURE."
+					},
+					"response": [
+						{
+							"name": "Reject Article Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Article rejected successfully\",\n    \"data\": {\n        \"articleId\": 1,\n        \"title\": \"My Article Title\",\n        \"contentBody\": \"This is the content body.\",\n        \"status\": \"REJECTED\",\n        \"topicId\": 1,\n        \"topicName\": \"Topic Name\",\n        \"author\": {\n            \"userId\": 1,\n            \"name\": \"John Doe\",\n            \"email\": \"user@example.com\",\n            \"avatarUrl\": null\n        },\n        \"approvedBy\": {\n            \"userId\": 2,\n            \"name\": \"Admin User\",\n            \"email\": \"admin@example.com\",\n            \"avatarUrl\": null\n        },\n        \"diagrams\": [],\n        \"createdAt\": \"2026-02-27T10:30:00\",\n        \"approvedAt\": null\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-02-27T10:30:00\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Subjects",
+			"description": "Subject management APIs",
+			"item": [
+				{
+					"name": "Create Subject",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subjectCode\": \"SWD392\",\n    \"name\": \"Software Development Project\",\n    \"description\": \"Course about software development\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/subjects",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "subjects"]
+						},
+						"description": "Create a new subject. Role: ADMIN only. Subject code must be unique."
+					},
+					"response": [
+						{
+							"name": "Create Subject Success",
+							"status": "Created",
+							"code": 201,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Subject created successfully\",\n    \"data\": {\n        \"subjectId\": 1,\n        \"subjectCode\": \"SWD392\",\n        \"name\": \"Software Development Project\",\n        \"description\": \"Course about software development\",\n        \"topics\": []\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-02-27T10:30:00\"\n}"
+						},
+						{
+							"name": "Subject Code Already Exists",
+							"status": "Conflict",
+							"code": 409,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": false,\n    \"message\": \"Subject with code 'SWD392' already exists\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Topics",
+			"description": "Topic management APIs",
+			"item": [
+				{
+					"name": "Create Topic",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subjectId\": 1,\n    \"name\": \"Spring Boot Basics\",\n    \"description\": \"Introduction to Spring Boot\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/topics",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "topics"]
+						},
+						"description": "Create a new topic under a subject. Role: ADMIN only. Subject must exist."
+					},
+					"response": [
+						{
+							"name": "Create Topic Success",
+							"status": "Created",
+							"code": 201,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Topic created successfully\",\n    \"data\": {\n        \"topicId\": 1,\n        \"subjectId\": 1,\n        \"subjectName\": \"Software Development Project\",\n        \"name\": \"Spring Boot Basics\",\n        \"description\": \"Introduction to Spring Boot\"\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-02-27T10:30:00\"\n}"
+						},
+						{
+							"name": "Subject Not Found",
+							"status": "Not Found",
+							"code": 404,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": false,\n    \"message\": \"Subject not found with id: 999\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Hello",
+			"description": "Test endpoint",
+			"item": [
+				{
+					"name": "Say Hello",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/hello/",
+							"host": ["{{baseUrl}}"],
+							"path": ["hello", ""]
+						},
+						"description": "A simple test endpoint that returns a greeting message. No authentication required."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
