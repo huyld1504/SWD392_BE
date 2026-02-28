@@ -10,6 +10,7 @@ import com.swd392.exceptions.AppException;
 import com.swd392.repositories.UserRepository;
 import com.swd392.services.JwtTokenProvider;
 import com.swd392.services.interfaces.AuthService;
+import com.swd392.services.interfaces.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
+    private final WalletService walletService;
 
     @Override
     @Transactional
@@ -97,6 +99,8 @@ public class AuthServiceImpl implements AuthService {
         newUser.setProvider("local");
 
         User savedUser = userRepository.save(newUser);
+        //Create wallet for user
+        walletService.createWalletForUser(savedUser);
         log.info("User registered successfully: {}", savedUser.getEmail());
 
         // Generate JWT token
@@ -135,7 +139,12 @@ public class AuthServiceImpl implements AuthService {
                     newUser.setAvatarUrl(picture);
                     newUser.setRole(User.UserRole.STUDENT);
                     newUser.setStatus(User.UserStatus.ACTIVE);
-                    return userRepository.save(newUser);
+
+                    User saveUser = userRepository.save(newUser);
+                    //Create wallet for user
+                    walletService.createWalletForUser(saveUser);
+
+                    return saveUser;
                 });
 
         // Check user status

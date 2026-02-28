@@ -4,21 +4,23 @@ import com.swd392.dtos.userDTO.ChangePasswordRequest;
 import com.swd392.dtos.common.ApiResponse;
 import com.swd392.dtos.userDTO.ForgotPasswordRequest;
 import com.swd392.dtos.userDTO.ResetPasswordRequest;
+import com.swd392.entities.Wallet;
 import com.swd392.services.interfaces.UserService;
+import com.swd392.services.interfaces.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final WalletService walletService;
 
     //For change password
     @PostMapping("/change-password")
