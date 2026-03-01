@@ -10,6 +10,7 @@ import com.swd392.services.JwtTokenProvider;
 import com.swd392.services.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,9 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
+
+    @Value("${FRONTEND_URL:http://localhost:3000}")
+    private String frontEndURL;
 
     @Override
     public Optional<User> findByEmail(String email) {
@@ -73,6 +77,8 @@ public class UserServiceImpl implements UserService {
 
     //For change password
     public void changePassword(String email, ChangePasswordRequest request) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("Changing password for user: {}", email);
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException("User not found"));
@@ -90,18 +96,22 @@ public class UserServiceImpl implements UserService {
 
     //For reset password
     public void forgotPassword(String email) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("Processing forgot password for email: {}", email);
 
-        User user = userRepository.findByEmail(email)
+        userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException("User not found"));
 
         String token = jwtTokenProvider.generateResetToken(email);
 
-        String resetLink = "http://localhost:3000/reset-password?token=" + token;
+        String resetLink = frontEndURL + "/reset-password?token=" + token;
 
         emailService.sendResetEmail(email, resetLink);
     }
 
     public void resetPassword(ResetPasswordRequest request) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("Resetting password for token: {}", request.getToken());
 
         String token = request.getToken();
 

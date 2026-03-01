@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   application:
@@ -24,8 +24,8 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+            client-id: ${GOOGLE_CLIENT_ID:default-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:default-client-secret}
             scope:
               - openid
               - email
@@ -38,25 +38,38 @@ spring:
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
 
+  # Multipart file upload
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 25MB
+
   #App Password
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: datnpse182125@fpt.edu.vn
-    password: cndkwqjqfraoyjlm
+    host: ${EMAIL_HOST:smtp.gmail.com}
+    port: ${EMAIL_PORT:587}
+    username: ${EMAIL_USERNAME:noreply@example.com}
+    password: ${EMAIL_PASSWORD:default}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
-#    cndkwqjqfraoyjlm
+
+# Cloudinary Configuration
+cloudinary:
+  cloud_name: ${CLOUDINARY_CLOUD_NAME:default}
+  api_key: ${CLOUDINARY_API_KEY:default}
+  api_secret: ${CLOUDINARY_SECRET_KEY:default}
+
 # JWT Configuration
 secret:
   jwt:
-    secret-key: ${JWT_SECRET_KEY}
-    expiration-time: ${JWT_EXPIRATION_MS} # 1 day in milliseconds
-    reset-expiration-time: 900000   # 15 phút
+    secret-key: ${JWT_SECRET_KEY:default-secret-key-for-development-only-change-in-production}
+    expiration-time: ${JWT_EXPIRATION_MS:86400000} # 1 day in milliseconds
+    reset-expiration-time: 900000
 
 # App Configuration
 app:
@@ -65,6 +78,9 @@ app:
   openapi:
     dev-url: http://localhost:8080
     prod-url: ${BACKEND_PRODUCT_URL:http://localhost:8080}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
 
 # Swagger/OpenAPI Configuration
 springdoc:
@@ -79,8 +95,3 @@ springdoc:
     filter: true
     syntaxHighlight:
       activated: true
-
-
-
-
-

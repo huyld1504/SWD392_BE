@@ -1,5 +1,6 @@
 package com.swd392.controllers;
 
+import com.swd392.configs.RequestContext;
 import com.swd392.dtos.userDTO.ChangePasswordRequest;
 import com.swd392.dtos.common.ApiResponse;
 import com.swd392.dtos.userDTO.ForgotPasswordRequest;
@@ -9,14 +10,16 @@ import com.swd392.services.interfaces.UserService;
 import com.swd392.services.interfaces.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 
+@Slf4j
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
@@ -28,9 +31,14 @@ public class UserController {
             @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication) {
 
+        RequestContext.setCurrentLayer("CONTROLLER");
+        log.info("Received change password request for user: {}", authentication.getName());
+
         String email = authentication.getName();
 
         userService.changePassword(email, request);
+
+        log.info("Password changed successfully for user: {}", email);
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .success(true)
@@ -46,7 +54,12 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request) {
 
+        RequestContext.setCurrentLayer("CONTROLLER");
+        log.info("Received forgot password request for email: {}", request.getEmail());
+
         userService.forgotPassword(request.getEmail());
+
+        log.info("Reset password email sent successfully to: {}", request.getEmail());
 
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
@@ -60,7 +73,12 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request) {
 
+        RequestContext.setCurrentLayer("CONTROLLER");
+        log.info("Received reset password request with token");
+
         userService.resetPassword(request);
+
+        log.info("Password reset successfully");
 
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
