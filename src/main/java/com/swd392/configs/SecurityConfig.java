@@ -39,6 +39,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     private final CustomUserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
@@ -46,11 +47,13 @@ public class SecurityConfig {
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             @Lazy OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler,
+            @Lazy OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler,
             CustomUserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder,
             ObjectMapper objectMapper) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
+        this.oAuth2AuthenticationFailureHandler = oAuth2AuthenticationFailureHandler;
         this.userDetailsService = userDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
@@ -78,7 +81,7 @@ public class SecurityConfig {
                         .authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2AuthenticationSuccessHandler)
-                        .failureUrl("/api/v1/auth/oauth2/error"))
+                        .failureHandler(oAuth2AuthenticationFailureHandler))
                 .exceptionHandling(ex -> ex
                         .accessDeniedHandler(((request, response, accessDeniedException) -> {
                             response.setStatus(403);
