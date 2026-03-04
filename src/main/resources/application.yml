@@ -73,6 +73,9 @@ secret:
 
 # App Configuration
 app:
+  google:
+    web-client-id: ${GOOGLE_CLIENT_ID:default-client-id}
+    android-client-id: ${GOOGLE_ANDROID_CLIENT_ID:default-android-client-id}
   oauth2:
     authorized-redirect-uri: ${FRONTEND_URL:http://localhost:3000}/auth/callback}
   openapi:

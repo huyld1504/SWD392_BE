@@ -2,6 +2,7 @@ package com.swd392.controllers;
 
 import com.swd392.configs.RequestContext;
 import com.swd392.dtos.authDTO.AuthenticationResponse;
+import com.swd392.dtos.authDTO.GoogleIdTokenRequest;
 import com.swd392.dtos.authDTO.LoginRequest;
 import com.swd392.dtos.authDTO.RegisterRequest;
 import com.swd392.dtos.common.ApiResponse;
@@ -74,10 +75,9 @@ public class AuthController {
         }
 
         /**
-         * Initiate Google OAuth2 login
-         * This endpoint will redirect to Google for authentication
+         * Initiate Google OAuth2 login (Web)
          */
-        @Operation(summary = "Initiate Google OAuth2 login", description = "Redirects to Google for OAuth2 authentication. Users will be redirected to Google login page.")
+        @Operation(summary = "Initiate Google OAuth2 login (Web)", description = "Redirects to Google for OAuth2 authentication. Users will be redirected to Google login page.")
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "302", description = "Redirect to Google OAuth2", content = @Content),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Bad request", content = @Content)
@@ -89,6 +89,40 @@ public class AuthController {
                                 .build();
         }
 
+        /**
+         * Google OAuth2 login for Android/Mobile app.
+         * Android app sends the Google ID token, backend verifies and returns JWT.
+         */
+        @Operation(summary = "Google OAuth2 login for Android/Mobile", description = "Authenticate user via Google ID Token from mobile app. "
+                        + "The Android app uses Google Sign-In SDK to obtain an ID token, "
+                        + "then sends it to this endpoint for verification. "
+                        + "Returns JWT token and user information upon success.")
+        @ApiResponses({
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Authentication successful", content = @Content(schema = @Schema(implementation = AuthenticationResponse.class))),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Email not verified or invalid request", content = @Content),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid or expired Google ID token", content = @Content),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "User account is banned or suspended", content = @Content)
+        })
+        @PostMapping("/google/android")
+        public ApiResponse<AuthenticationResponse> loginWithGoogleAndroid(
+                        @Valid @RequestBody GoogleIdTokenRequest request) {
+                RequestContext.setCurrentLayer("CONTROLLER");
+                log.info("\n  \u250c\u2500 CONTROLLER \u2500 loginWithGoogleAndroid\n  \u2502 Received Google ID Token for verification");
+
+                AuthenticationResponse result = authService.authenticateWithGoogleIdToken(request.getIdToken());
+
+                log.info("\n  \u2514\u2500 CONTROLLER \u2500 loginWithGoogleAndroid\n    Status : SUCCESS");
+
+                return ApiResponse.<AuthenticationResponse>builder()
+                                .success(true)
+                                .message("Google authentication successful")
+                                .data(result)
+                                .build();
+        }
+
+        /**
+         * Register with email and password
+         */
         @Operation(summary = "Register with email and password", description = "Register a new user with email and password credentials.")
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Registration successful", content = @Content(schema = @Schema(implementation = AuthenticationResponse.class))),
