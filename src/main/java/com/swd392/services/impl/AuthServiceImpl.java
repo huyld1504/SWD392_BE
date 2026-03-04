@@ -10,6 +10,7 @@ import com.swd392.exceptions.AppException;
 import com.swd392.repositories.UserRepository;
 import com.swd392.services.JwtTokenProvider;
 import com.swd392.services.interfaces.AuthService;
+import com.swd392.services.interfaces.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
+    private final WalletService walletService;
 
     @Override
     @Transactional
@@ -40,7 +42,8 @@ public class AuthServiceImpl implements AuthService {
 
         // Verify user exists
         User user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new AppException("User not found with email: " + loginRequest.getEmail(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("User not found with email: " + loginRequest.getEmail(),
+                        HttpStatus.NOT_FOUND));
 
         // Check user status
         if (user.getStatus() == User.UserStatus.BANNED) {
@@ -55,9 +58,7 @@ public class AuthServiceImpl implements AuthService {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
-                            loginRequest.getPassword()
-                    )
-            );
+                            loginRequest.getPassword()));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -84,7 +85,8 @@ public class AuthServiceImpl implements AuthService {
 
         // Check if user already exists
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
-            throw new AppException("User already exists with email: " + registerRequest.getEmail(), HttpStatus.CONFLICT);
+            throw new AppException("User already exists with email: " + registerRequest.getEmail(),
+                    HttpStatus.CONFLICT);
         }
 
         // Create new user
@@ -98,6 +100,9 @@ public class AuthServiceImpl implements AuthService {
 
         User savedUser = userRepository.save(newUser);
         log.info("User registered successfully: {}", savedUser.getEmail());
+
+        // Create default MAIN wallet (BLUE currency) for the new user
+        walletService.createDefaultWallet(savedUser);
 
         // Generate JWT token
         String token = jwtTokenProvider.generateTokenForUser(savedUser.getEmail());
@@ -135,7 +140,12 @@ public class AuthServiceImpl implements AuthService {
                     newUser.setAvatarUrl(picture);
                     newUser.setRole(User.UserRole.STUDENT);
                     newUser.setStatus(User.UserStatus.ACTIVE);
-                    return userRepository.save(newUser);
+                    User savedUser = userRepository.save(newUser);
+
+                    // Create default MAIN wallet (BLUE currency) for the new Google user
+                    walletService.createDefaultWallet(savedUser);
+
+                    return savedUser;
                 });
 
         // Check user status
