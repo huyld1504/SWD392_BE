@@ -3,13 +3,18 @@ package com.swd392.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "subjects")
-@Getter @Setter
+@SQLDelete(sql = "UPDATE subjects SET is_deleted = true WHERE subject_id = ?")
+@Where(clause = "is_deleted = false")
+@Getter
+@Setter
 public class Subject {
 
     @Id
@@ -26,8 +31,11 @@ public class Subject {
     @Lob
     private String description;
 
-    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
-    private List<Topic> topics = new ArrayList<>();
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean deleted = false;
+
+    @OneToMany(mappedBy = "subject")
+    private List<Topic> topics;
 
     @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
     private List<UserSubject> userSubjects = new ArrayList<>();

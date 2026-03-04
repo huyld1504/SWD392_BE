@@ -5,12 +5,16 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "topics")
+@SQLDelete(sql = "UPDATE topics SET is_deleted = true WHERE topic_id = ?")
+@Where(clause = "is_deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,7 +36,11 @@ public class Topic {
     @Lob
     private String description;
 
-    @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL)
-    private List<Article> articles = new ArrayList<>();
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean deleted = false;
+
+
+    @OneToMany(mappedBy = "topic")
+    private List<Article> articles;
 }
 

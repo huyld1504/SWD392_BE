@@ -20,6 +20,8 @@ public interface ArticleService {
 
     void delete(Integer id);
 
+    void restore(Integer id);
+
     ArticleResponseDTO approve(Integer articleId);
 
     ArticleResponseDTO reject(Integer articleId);
