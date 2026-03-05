@@ -100,17 +100,35 @@ public class ArticleController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('STUDENT','LECTURE','ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable Integer id) {
 
         articleService.delete(id);
 
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .success(true)
-                .message("Article deleted successfully")
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message("Article deleted successfully")
+                        .requestId(RequestContext.getRequestId())
+                        .timestamp(LocalDateTime.now().toString())
+                        .build());
+    }
+
+    @PutMapping("/{id}/restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> restore(@PathVariable Integer id) {
+
+        articleService.restore(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message("Article restored successfully")
+                        .requestId(RequestContext.getRequestId())
+                        .timestamp(LocalDateTime.now().toString())
+                        .build()
+        );
     }
 
     @PutMapping("/{id}/approve")

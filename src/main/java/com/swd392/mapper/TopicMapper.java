@@ -9,10 +9,10 @@ public class TopicMapper {
 
   public TopicResponseDTO toDTO(Topic topic) {
     return new TopicResponseDTO(
-        topic.getTopicId(),
-        topic.getSubject().getSubjectId(),
-        topic.getSubject().getName(),
-        topic.getName(),
-        topic.getDescription());
+            topic.getTopicId(),
+            topic.getSubject().getSubjectId(),
+            topic.getSubject().getName(),
+            topic.getName(),
+            topic.getDescription());
   }
 }

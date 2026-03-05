@@ -22,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
@@ -73,11 +75,12 @@ public class ArticleServiceImpl implements ArticleService {
         return articleMapper.toDTO(saved);
     }
 
+    @PreAuthorize("hasPermission(#id, 'ARTICLE', 'VIEW')")
     @Override
     public ArticleResponseDTO getById(Integer id) {
 
         Article article = articleRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Article not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
 
         return articleMapper.toDTO(article);
     }
@@ -85,13 +88,31 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public PaginationResponseDTO<List<ArticleResponseDTO>> getAll(String keyword, Pageable pageable) {
 
+        User currentUser = getCurrentUser();
+
         Specification<Article> spec = Specification.where(null);
 
+
+
+        // ================= KEYWORD FILTER =================
         if (keyword != null && !keyword.isBlank()) {
             spec = spec.and((root, query, cb) -> cb.or(
                     cb.like(cb.lower(root.get("title")), "%" + keyword.toLowerCase() + "%"),
-                    cb.like(cb.lower(root.get("contentBody")), "%" + keyword.toLowerCase() + "%")));
+                    cb.like(cb.lower(root.get("contentBody")), "%" + keyword.toLowerCase() + "%")
+            ));
         }
+
+        User.UserRole role = currentUser.getRole();
+
+        // ================= STUDENT FILTER =================
+        if (role == User.UserRole.STUDENT) {
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.equal(root.get("author").get("userId"), currentUser.getUserId()),
+                    cb.equal(root.get("status"), Article.ArticleStatus.APPROVED)
+            ));
+        }
+
+        // ADMIN & LECTURE: không cần filter thêm (xem tất cả)
 
         Page<Article> page = articleRepository.findAll(spec, pageable);
 
@@ -109,11 +130,12 @@ public class ArticleServiceImpl implements ArticleService {
                 .build();
     }
 
+    @PreAuthorize("hasPermission(#id, 'ARTICLE', 'UPDATE')")
     @Override
     public ArticleResponseDTO update(Integer id, ArticleRequestDTO request) {
 
         Article article = articleRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Article not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
 
         article.setTitle(request.getTitle());
         article.setContentBody(request.getContentBody());
@@ -122,13 +144,39 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
+    @Transactional
     public void delete(Integer id) {
 
-        if (!articleRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Article not found with id: " + id);
+        Article article = articleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
+
+        User currentUser = getCurrentUser();
+
+        if (currentUser.getRole() == User.UserRole.ADMIN) {
+            articleRepository.delete(article);   // Hibernate tự soft delete
+            return;
         }
 
-        articleRepository.deleteById(id);
+        if (!article.getAuthor().getUserId().equals(currentUser.getUserId())) {
+            throw new AccessDeniedException("You can only delete your own article");
+        }
+
+        articleRepository.delete(article);
+    }
+
+
+
+
+    @Transactional
+    public void restore(Integer id) {
+
+        User currentUser = getCurrentUser();
+
+        if (currentUser.getRole() != User.UserRole.ADMIN) {
+            throw new AccessDeniedException("Only admin can restore article");
+        }
+
+        articleRepository.restoreById(id);
     }
 
     @Override
