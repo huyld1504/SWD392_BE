@@ -1,6 +1,7 @@
 package com.swd392.repositories;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -15,4 +16,6 @@ public interface WalletRepository extends JpaRepository<Wallet, Integer>, JpaSpe
   List<Wallet> findAllByUserUserId(Long userId);
 
   boolean existsByUserAndWalletType(User user, Wallet.WalletType walletType);
+
+  Optional<Wallet> findByUserAndWalletType(User user, Wallet.WalletType walletType);
 }
