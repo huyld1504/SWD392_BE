@@ -3,14 +3,18 @@ package com.swd392.services.impl;
 import com.swd392.configs.RequestContext;
 import com.swd392.dtos.common.PaginationResponseDTO;
 import com.swd392.dtos.requestDTO.UpdateWalletStatusRequestDTO;
+import com.swd392.dtos.responseDTO.TransactionResponseDTO;
 import com.swd392.dtos.responseDTO.WalletResponseDTO;
+import com.swd392.entities.Transaction;
 import com.swd392.entities.User;
 import com.swd392.entities.Wallet;
 import com.swd392.exceptions.AppException;
 import com.swd392.mapper.WalletMapper;
+import com.swd392.repositories.TransactionRepository;
 import com.swd392.repositories.UserRepository;
 import com.swd392.repositories.WalletRepository;
 import com.swd392.repositories.specifications.WalletSpecification;
+import com.swd392.repositories.specifications.TransactionSpecification;
 import com.swd392.services.interfaces.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -34,6 +39,7 @@ public class WalletServiceImpl implements WalletService {
 
   private final WalletRepository walletRepository;
   private final UserRepository userRepository;
+  private final TransactionRepository transactionRepository;
   private final WalletMapper walletMapper;
 
   @Override
@@ -51,7 +57,7 @@ public class WalletServiceImpl implements WalletService {
     wallet.setUser(user);
     wallet.setWalletType(Wallet.WalletType.MAIN);
     wallet.setCurrency(Wallet.Currency.BLUE);
-    wallet.setBalance(java.math.BigDecimal.ZERO);
+    wallet.setBalance(new BigDecimal("100"));
     wallet.setStatus(Wallet.WalletStatus.ACTIVE);
 
     walletRepository.save(wallet);
@@ -191,5 +197,72 @@ public class WalletServiceImpl implements WalletService {
     } catch (IllegalArgumentException e) {
       throw new AppException("Invalid " + fieldName + ": " + value, HttpStatus.BAD_REQUEST);
     }
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PaginationResponseDTO<List<TransactionResponseDTO>> getWalletTransactions(
+      String email, Integer walletId, LocalDateTime fromDate, LocalDateTime toDate, int page, int size) {
+
+    RequestContext.setCurrentLayer("SERVICE");
+    log.info(
+        "\n    \u251c\u2500 SERVICE \u2500 getWalletTransactions\n    \u2502 User     : {}\n    \u2502 Wallet   : {}\n    \u2502 FromDate : {}\n    \u2502 ToDate   : {}",
+        email, walletId, fromDate, toDate);
+
+    Wallet wallet = walletRepository.findById(walletId)
+        .orElseThrow(() -> new AppException("Wallet not found", HttpStatus.NOT_FOUND));
+
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new AppException("User not found", HttpStatus.NOT_FOUND));
+
+    if (!wallet.getUser().getUserId().equals(user.getUserId())) {
+      throw new AppException("You can only view transactions of your own wallet", HttpStatus.FORBIDDEN);
+    }
+
+    Specification<Transaction> spec = Specification
+        .where(TransactionSpecification.hasWalletId(walletId))
+        .and(TransactionSpecification.createdAfter(fromDate))
+        .and(TransactionSpecification.createdBefore(toDate));
+
+    Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+    Page<Transaction> txPage = transactionRepository.findAll(spec, pageable);
+
+    List<TransactionResponseDTO> dtos = txPage.getContent().stream()
+        .map(transaction -> mapTransactionToDTO(transaction, walletId))
+        .toList();
+
+    log.info("\n    \u2514\u2500 SERVICE \u2500 getWalletTransactions\n      Status : SUCCESS\n      Total  : {}",
+        txPage.getTotalElements());
+
+    return PaginationResponseDTO.<List<TransactionResponseDTO>>builder()
+        .totalItems(txPage.getTotalElements())
+        .totalPages(txPage.getTotalPages())
+        .currentPage(page)
+        .pageSize(size)
+        .data(dtos)
+        .build();
+  }
+
+  private TransactionResponseDTO mapTransactionToDTO(Transaction transaction, Integer currentWalletId) {
+    boolean isSender = transaction.getSenderWallet() != null
+        && transaction.getSenderWallet().getWalletId().equals(currentWalletId);
+
+    User counterparty;
+    if (isSender && transaction.getReceiverWallet() != null) {
+      counterparty = transaction.getReceiverWallet().getUser();
+    } else if (!isSender && transaction.getSenderWallet() != null) {
+      counterparty = transaction.getSenderWallet().getUser();
+    } else {
+      counterparty = null;
+    }
+
+    return new TransactionResponseDTO(
+        transaction.getTransactionId(),
+        transaction.getTransactionType().name(),
+        transaction.getAmount(),
+        transaction.getCurrency().name(),
+        counterparty != null ? counterparty.getFullName() : "System",
+        counterparty != null ? counterparty.getEmail() : null,
+        transaction.getCreatedAt());
   }
 }
