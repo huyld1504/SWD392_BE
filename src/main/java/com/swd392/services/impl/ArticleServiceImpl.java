@@ -86,7 +86,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public PaginationResponseDTO<List<ArticleResponseDTO>> getAll(String keyword, Pageable pageable) {
+    public PaginationResponseDTO<List<ArticleResponseDTO>> getAll(String keyword,Article.ArticleStatus status, Pageable pageable) {
 
         User currentUser = getCurrentUser();
 
@@ -102,14 +102,31 @@ public class ArticleServiceImpl implements ArticleService {
             ));
         }
 
+        // FILTER STATUS
+        if (status != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("status"), status));
+        }
+
         User.UserRole role = currentUser.getRole();
 
         // ================= STUDENT FILTER =================
         if (role == User.UserRole.STUDENT) {
-            spec = spec.and((root, query, cb) -> cb.or(
-                    cb.equal(root.get("author").get("userId"), currentUser.getUserId()),
-                    cb.equal(root.get("status"), Article.ArticleStatus.APPROVED)
-            ));
+
+            if (status == Article.ArticleStatus.APPROVED) {
+
+                // thấy tất cả bài approved
+                spec = spec.and((root, query, cb) ->
+                        cb.equal(root.get("status"), Article.ArticleStatus.APPROVED)
+                );
+
+            } else {
+
+                // chỉ thấy bài của chính mình
+                spec = spec.and((root, query, cb) ->
+                        cb.equal(root.get("author").get("userId"), currentUser.getUserId())
+                );
+            }
         }
 
         // ADMIN & LECTURE: không cần filter thêm (xem tất cả)
@@ -140,6 +157,13 @@ public class ArticleServiceImpl implements ArticleService {
         article.setTitle(request.getTitle());
         article.setContentBody(request.getContentBody());
 
+        // nếu bài bị reject và student sửa lại -> quay lại pending
+        if(article.getStatus() == Article.ArticleStatus.REJECTED){
+            article.setStatus(Article.ArticleStatus.PENDING);
+            article.setApprover(null);
+            article.setApprovedAt(null);
+        }
+
         return articleMapper.toDTO(articleRepository.save(article));
     }
 
@@ -152,13 +176,22 @@ public class ArticleServiceImpl implements ArticleService {
 
         User currentUser = getCurrentUser();
 
+        // ADMIN delete tất cả
         if (currentUser.getRole() == User.UserRole.ADMIN) {
-            articleRepository.delete(article);   // Hibernate tự soft delete
+            articleRepository.delete(article);
             return;
         }
 
+        // chỉ author mới delete
         if (!article.getAuthor().getUserId().equals(currentUser.getUserId())) {
             throw new AccessDeniedException("You can only delete your own article");
+        }
+
+        // student không được delete bài approved
+        if (currentUser.getRole() == User.UserRole.STUDENT &&
+                article.getStatus() == Article.ArticleStatus.APPROVED) {
+
+            throw new AppException("Student cannot delete an approved article", HttpStatus.BAD_REQUEST);
         }
 
         articleRepository.delete(article);

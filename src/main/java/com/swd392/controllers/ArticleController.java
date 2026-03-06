@@ -5,6 +5,7 @@ import com.swd392.dtos.common.ApiResponse;
 import com.swd392.dtos.common.PaginationResponseDTO;
 import com.swd392.dtos.requestDTO.ArticleRequestDTO;
 import com.swd392.dtos.responseDTO.ArticleResponseDTO;
+import com.swd392.entities.Article;
 import com.swd392.services.interfaces.ArticleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,7 @@ public class ArticleController {
     @GetMapping
     public ResponseEntity<ApiResponse<PaginationResponseDTO<List<ArticleResponseDTO>>>> getAll(
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) Article.ArticleStatus status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "sort", defaultValue = "createdAt") String sort,
@@ -72,7 +74,7 @@ public class ArticleController {
         Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
-        PaginationResponseDTO<List<ArticleResponseDTO>> result = articleService.getAll(keyword, pageable);
+        PaginationResponseDTO<List<ArticleResponseDTO>> result = articleService.getAll(keyword, status, pageable);
 
         return ResponseEntity.ok(ApiResponse.<PaginationResponseDTO<List<ArticleResponseDTO>>>builder()
                 .success(true)
