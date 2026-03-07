@@ -1,0 +1,10 @@
+package com.swd392.dtos.responseDTO;
+
+import java.math.BigDecimal;
+
+public record UserFeedingDetailDTO(
+    Integer feedingId,
+    UserInfoDTO student,
+    BigDecimal amountReceived,
+    BigDecimal snapshotEarnedBalance) {
+}
