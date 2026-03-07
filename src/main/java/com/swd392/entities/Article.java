@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -43,8 +44,7 @@ public class Article {
     @Column(nullable = false, length = 255)
     private String title;
 
-    @Lob
-    @Column(name = "content_body")
+    @Column(name = "content_body", columnDefinition = "LONGTEXT")
     private String contentBody;
 
     @Enumerated(EnumType.STRING)
@@ -54,6 +54,10 @@ public class Article {
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
