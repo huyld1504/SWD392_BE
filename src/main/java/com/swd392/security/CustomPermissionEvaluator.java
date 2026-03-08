@@ -93,14 +93,18 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
         if (role == User.UserRole.STUDENT) {
 
             if (action.equals("VIEW")) {
-                return article.getAuthor().getUserId()
-                        .equals(currentUser.getUserId())
+                return article.getAuthor().getUserId().equals(currentUser.getUserId())
                         || article.getStatus() == Article.ArticleStatus.APPROVED;
             }
 
-            if (action.equals("UPDATE") || action.equals("DELETE")) {
-                return article.getAuthor().getUserId()
-                        .equals(currentUser.getUserId());
+            if (action.equals("UPDATE")) {
+                return article.getAuthor().getUserId().equals(currentUser.getUserId())
+                        && (article.getStatus() == Article.ArticleStatus.PENDING
+                        || article.getStatus() == Article.ArticleStatus.REJECTED);
+            }
+
+            if (action.equals("DELETE")) {
+                return article.getAuthor().getUserId().equals(currentUser.getUserId());
             }
         }
 
