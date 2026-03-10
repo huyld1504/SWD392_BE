@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,9 +38,9 @@ public class TopicServiceImpl implements TopicService {
   public TopicResponseDTO create(TopicRequestDTO request) {
 
     Subject subject = subjectRepository.findById(request.getSubjectId())
-            .orElseThrow(() -> new AppException(
-                    "Subject not found with id: " + request.getSubjectId(),
-                    HttpStatus.NOT_FOUND));
+        .orElseThrow(() -> new AppException(
+            "Subject not found with id: " + request.getSubjectId(),
+            HttpStatus.NOT_FOUND));
 
     Topic topic = new Topic();
     topic.setSubject(subject);
@@ -51,34 +52,43 @@ public class TopicServiceImpl implements TopicService {
 
   @Override
   public PaginationResponseDTO<List<TopicResponseDTO>> getAll(
-          String keyword,
-          Integer subjectId,
-          Pageable pageable) {
+      String keyword,
+      Integer subjectId,
+      String subjectCode,
+      Pageable pageable) {
 
-    Page<Topic> topicPage;
+    Specification<Topic> spec = Specification.where(null);
 
-    if (subjectId != null) {
-      topicPage = topicRepository.findBySubjectSubjectId(subjectId, pageable);
-    } else {
-      topicPage = topicRepository.findAll(pageable);
+    // ===== SUBJECT FILTER (subjectCode ưu tiên hơn subjectId) =====
+    if (subjectCode != null && !subjectCode.isBlank()) {
+      spec = spec.and(
+          (root, query, cb) -> cb.equal(cb.lower(root.get("subject").get("subjectCode")), subjectCode.toLowerCase()));
+    } else if (subjectId != null) {
+      spec = spec.and((root, query, cb) -> cb.equal(root.get("subject").get("subjectId"), subjectId));
     }
 
-    List<TopicResponseDTO> filteredList = topicPage.getContent()
-            .stream()
-            .filter(topic ->
-                    keyword == null ||
-                            topic.getName().toLowerCase()
-                                    .contains(keyword.toLowerCase()))
-            .map(topicMapper::toDTO)
-            .toList();
+    // ===== KEYWORD FILTER (tên hoặc mô tả) =====
+    if (keyword != null && !keyword.isBlank()) {
+      String kw = "%" + keyword.toLowerCase() + "%";
+      spec = spec.and((root, query, cb) -> cb.or(
+          cb.like(cb.lower(root.get("name")), kw),
+          cb.like(cb.lower(root.get("description").as(String.class)), kw)));
+    }
+
+    Page<Topic> topicPage = topicRepository.findAll(spec, pageable);
+
+    List<TopicResponseDTO> data = topicPage.getContent()
+        .stream()
+        .map(topicMapper::toDTO)
+        .toList();
 
     return PaginationResponseDTO.<List<TopicResponseDTO>>builder()
-            .totalItems(topicPage.getTotalElements())
-            .totalPages(topicPage.getTotalPages())
-            .currentPage(topicPage.getNumber())
-            .pageSize(topicPage.getSize())
-            .data(filteredList)
-            .build();
+        .totalItems(topicPage.getTotalElements())
+        .totalPages(topicPage.getTotalPages())
+        .currentPage(topicPage.getNumber())
+        .pageSize(topicPage.getSize())
+        .data(data)
+        .build();
   }
 
   @Override
@@ -86,9 +96,9 @@ public class TopicServiceImpl implements TopicService {
   public TopicResponseDTO getById(Integer id) {
 
     Topic topic = topicRepository.findById(id)
-            .orElseThrow(() -> new AppException(
-                    "Topic not found with id: " + id,
-                    HttpStatus.NOT_FOUND));
+        .orElseThrow(() -> new AppException(
+            "Topic not found with id: " + id,
+            HttpStatus.NOT_FOUND));
 
     return topicMapper.toDTO(topic);
   }
@@ -97,14 +107,14 @@ public class TopicServiceImpl implements TopicService {
   public TopicResponseDTO update(Integer id, TopicRequestDTO request) {
 
     Topic topic = topicRepository.findById(id)
-            .orElseThrow(() -> new AppException(
-                    "Topic not found with id: " + id,
-                    HttpStatus.NOT_FOUND));
+        .orElseThrow(() -> new AppException(
+            "Topic not found with id: " + id,
+            HttpStatus.NOT_FOUND));
 
     Subject subject = subjectRepository.findById(request.getSubjectId())
-            .orElseThrow(() -> new AppException(
-                    "Subject not found with id: " + request.getSubjectId(),
-                    HttpStatus.NOT_FOUND));
+        .orElseThrow(() -> new AppException(
+            "Subject not found with id: " + request.getSubjectId(),
+            HttpStatus.NOT_FOUND));
 
     topic.setSubject(subject);
     topic.setName(request.getName());
@@ -117,7 +127,7 @@ public class TopicServiceImpl implements TopicService {
   public void adminDelete(Integer id) {
 
     Topic topic = topicRepository.findById(id)
-            .orElseThrow(() -> new AppException("Topic not found", HttpStatus.NOT_FOUND));
+        .orElseThrow(() -> new AppException("Topic not found", HttpStatus.NOT_FOUND));
 
     for (Article article : topic.getArticles()) {
       articleRepository.delete(article);
@@ -132,6 +142,5 @@ public class TopicServiceImpl implements TopicService {
     topicRepository.restoreById(id);
     articleRepository.restoreByTopicId(id);
   }
-
 
 }

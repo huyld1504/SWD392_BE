@@ -24,103 +24,100 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SubjectController {
 
-  private final SubjectService subjectService;
+        private final SubjectService subjectService;
 
-  @PostMapping
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<ApiResponse<SubjectResponseDTO>> create(
-          @Valid @RequestBody SubjectRequestDTO request) {
+        @PostMapping
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<SubjectResponseDTO>> create(
+                        @Valid @RequestBody SubjectRequestDTO request) {
 
-    return buildResponse(
-            subjectService.create(request),
-            "Subject created successfully",
-            HttpStatus.CREATED);
-  }
+                return buildResponse(
+                                subjectService.create(request),
+                                "Subject created successfully",
+                                HttpStatus.CREATED);
+        }
 
-  @GetMapping
-  public ResponseEntity<ApiResponse<PaginationResponseDTO<List<SubjectResponseDTO>>>> getAll(
-          @RequestParam(value = "keyword", required = false) String keyword,
-          @RequestParam(value = "page", defaultValue = "0") int page,
-          @RequestParam(value = "size", defaultValue = "10") int size,
-          @RequestParam(value = "sort", defaultValue = "subjectId") String sort,
-          @RequestParam(value = "direction", defaultValue = "desc") String direction) {
+        @GetMapping
+        public ResponseEntity<ApiResponse<PaginationResponseDTO<List<SubjectResponseDTO>>>> getAll(
+                        @RequestParam(value = "keyword", required = false) String keyword,
+                        @RequestParam(value = "page", defaultValue = "0") int page,
+                        @RequestParam(value = "size", defaultValue = "10") int size,
+                        @RequestParam(value = "sort", defaultValue = "subjectId") String sort,
+                        @RequestParam(value = "direction", defaultValue = "desc") String direction) {
 
-    Sort.Direction sortDirection =
-            direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+                Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC
+                                : Sort.Direction.DESC;
 
-    Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+                Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
-    PaginationResponseDTO<List<SubjectResponseDTO>> result =
-            subjectService.getAll(keyword, pageable);
+                PaginationResponseDTO<List<SubjectResponseDTO>> result = subjectService.getAll(keyword, pageable);
 
-    return ResponseEntity.ok(
-            ApiResponse.<PaginationResponseDTO<List<SubjectResponseDTO>>>builder()
-                    .success(true)
-                    .message("Subjects retrieved successfully")
-                    .data(result)
-                    .requestId(RequestContext.getRequestId())
-                    .timestamp(LocalDateTime.now().toString())
-                    .build()
-    );
-  }
+                return ResponseEntity.ok(
+                                ApiResponse.<PaginationResponseDTO<List<SubjectResponseDTO>>>builder()
+                                                .success(true)
+                                                .message("Subjects retrieved successfully")
+                                                .data(result)
+                                                .requestId(RequestContext.getRequestId())
+                                                .timestamp(LocalDateTime.now().toString())
+                                                .build());
+        }
 
-  @GetMapping("/{id}")
-  public ResponseEntity<ApiResponse<SubjectResponseDTO>> getById(
-          @PathVariable Integer id) {
+        @GetMapping("/{id}")
+        public ResponseEntity<ApiResponse<SubjectResponseDTO>> getById(
+                        @PathVariable Integer id) {
 
-    return buildResponse(
-            subjectService.getById(id),
-            "Subject retrieved successfully",
-            HttpStatus.OK);
-  }
+                return buildResponse(
+                                subjectService.getById(id),
+                                "Subject retrieved successfully",
+                                HttpStatus.OK);
+        }
 
-  @PutMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<ApiResponse<SubjectResponseDTO>> update(
-          @PathVariable Integer id,
-          @Valid @RequestBody SubjectRequestDTO request) {
+        @PutMapping("/{id}")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<SubjectResponseDTO>> update(
+                        @PathVariable Integer id,
+                        @Valid @RequestBody SubjectRequestDTO request) {
 
-    return buildResponse(
-            subjectService.update(id, request),
-            "Subject updated successfully",
-            HttpStatus.OK);
-  }
+                return buildResponse(
+                                subjectService.update(id, request),
+                                "Subject updated successfully",
+                                HttpStatus.OK);
+        }
 
-  @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<ApiResponse<Void>> delete(
-          @PathVariable Integer id) {
+        @DeleteMapping("/{id}")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<Void>> delete(
+                        @PathVariable Integer id) {
 
-    subjectService.adminDelete(id);
+                subjectService.adminDelete(id);
 
-    return buildResponse(null,
-            "Subject deleted successfully",
-            HttpStatus.OK);
-  }
+                return buildResponse(null,
+                                "Subject deleted successfully",
+                                HttpStatus.OK);
+        }
 
-  @PutMapping("/{id}/restore")
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<ApiResponse<Void>> restore(@PathVariable Integer id) {
+        @PutMapping("/{id}/restore")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<Void>> restore(@PathVariable Integer id) {
 
-    subjectService.adminRestore(id);
+                subjectService.adminRestore(id);
 
-    return buildResponse(
-            null,
-            "Subject restored successfully",
-            HttpStatus.OK
-    );
-  }
+                return buildResponse(
+                                null,
+                                "Subject restored successfully",
+                                HttpStatus.OK);
+        }
 
-  private <T> ResponseEntity<ApiResponse<T>> buildResponse(
-          T data, String message, HttpStatus status) {
+        private <T> ResponseEntity<ApiResponse<T>> buildResponse(
+                        T data, String message, HttpStatus status) {
 
-    return ResponseEntity.status(status)
-            .body(ApiResponse.<T>builder()
-                    .success(true)
-                    .message(message)
-                    .data(data)
-                    .requestId(RequestContext.getRequestId())
-                    .timestamp(LocalDateTime.now().toString())
-                    .build());
-  }
+                return ResponseEntity.status(status)
+                                .body(ApiResponse.<T>builder()
+                                                .success(true)
+                                                .message(message)
+                                                .data(data)
+                                                .requestId(RequestContext.getRequestId())
+                                                .timestamp(LocalDateTime.now().toString())
+                                                .build());
+        }
 }
