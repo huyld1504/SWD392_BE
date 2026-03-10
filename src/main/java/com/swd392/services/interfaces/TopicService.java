@@ -12,10 +12,10 @@ public interface TopicService {
   TopicResponseDTO create(TopicRequestDTO request);
 
   PaginationResponseDTO<List<TopicResponseDTO>> getAll(
-          String keyword,
-          Integer subjectId,
-          Pageable pageable
-  );
+      String keyword,
+      Integer subjectId,
+      String subjectCode,
+      Pageable pageable);
 
   TopicResponseDTO getById(Integer id);
 

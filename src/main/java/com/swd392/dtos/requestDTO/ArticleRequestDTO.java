@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,4 +20,12 @@ public class ArticleRequestDTO {
         private String title;
 
         private String contentBody;
+
+        /**
+         * Metadata cho từng diagram (caption, sortOrder).
+         * Index map 1:1 với file trong List<MultipartFile> diagrams.
+         * Ví dụ: diagramDetails[0] tương ứng với diagrams[0].
+         * Optional — nếu không gửi, caption = null và sortOrder tự gán theo index.
+         */
+        private List<ArticleDiagramCreateDTO> diagramDetails;
 }

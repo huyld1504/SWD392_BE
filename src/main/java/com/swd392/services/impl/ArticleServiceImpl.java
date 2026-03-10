@@ -1,7 +1,10 @@
 package com.swd392.services.impl;
 
 import com.swd392.dtos.common.PaginationResponseDTO;
+import com.swd392.dtos.requestDTO.ArticleDiagramCreateDTO;
+import com.swd392.dtos.requestDTO.ArticleDiagramUpdateDTO;
 import com.swd392.dtos.requestDTO.ArticleRequestDTO;
+import com.swd392.dtos.requestDTO.ArticleUpdateRequestDTO;
 import com.swd392.dtos.responseDTO.ArticleResponseDTO;
 import com.swd392.entities.Article;
 import com.swd392.entities.ArticleDiagram;
@@ -68,7 +71,7 @@ public class ArticleServiceImpl implements ArticleService {
 
         // Upload diagrams if provided
         if (diagrams != null && !diagrams.isEmpty()) {
-            List<ArticleDiagram> diagramEntities = uploadDiagrams(saved, diagrams);
+            List<ArticleDiagram> diagramEntities = uploadDiagrams(saved, diagrams, request.getDiagramDetails());
             saved.setDiagrams(diagramEntities);
         }
 
@@ -86,50 +89,64 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public PaginationResponseDTO<List<ArticleResponseDTO>> getAll(String keyword,Article.ArticleStatus status, Pageable pageable) {
+    public PaginationResponseDTO<List<ArticleResponseDTO>> getAll(String keyword, Article.ArticleStatus status,
+            Pageable pageable) {
 
         User currentUser = getCurrentUser();
-
         Specification<Article> spec = Specification.where(null);
 
-
-
-        // ================= KEYWORD FILTER =================
+        // ===== KEYWORD FILTER =====
         if (keyword != null && !keyword.isBlank()) {
+            String kw = "%" + keyword.toLowerCase() + "%";
             spec = spec.and((root, query, cb) -> cb.or(
-                    cb.like(cb.lower(root.get("title")), "%" + keyword.toLowerCase() + "%"),
-                    cb.like(cb.lower(root.get("contentBody")), "%" + keyword.toLowerCase() + "%")
-            ));
+                    cb.like(cb.lower(root.get("title")), kw),
+                    cb.like(cb.lower(root.get("contentBody")), kw)));
         }
 
-        // FILTER STATUS
-        if (status != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.equal(root.get("status"), status));
-        }
-
+        // ===== ROLE-BASED FILTER =====
         User.UserRole role = currentUser.getRole();
 
-        // ================= STUDENT FILTER =================
         if (role == User.UserRole.STUDENT) {
-
-            if (status == Article.ArticleStatus.APPROVED) {
-
-                // thấy tất cả bài approved
-                spec = spec.and((root, query, cb) ->
-                        cb.equal(root.get("status"), Article.ArticleStatus.APPROVED)
-                );
-
-            } else {
-
-                // chỉ thấy bài của chính mình
-                spec = spec.and((root, query, cb) ->
-                        cb.equal(root.get("author").get("userId"), currentUser.getUserId())
-                );
+            // Student chỉ thấy bài APPROVED (bất kể param status)
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), Article.ArticleStatus.APPROVED));
+        } else {
+            // Admin & Lecture: có thể filter theo status, nếu không thì xem tất cả
+            if (status != null) {
+                spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
             }
         }
 
-        // ADMIN & LECTURE: không cần filter thêm (xem tất cả)
+        return buildPaginationResponse(spec, pageable);
+    }
+
+    @Override
+    public PaginationResponseDTO<List<ArticleResponseDTO>> getMyArticles(String keyword, Article.ArticleStatus status,
+            Pageable pageable) {
+
+        User currentUser = getCurrentUser();
+        Specification<Article> spec = Specification.where(null);
+
+        // ===== CHỈ LẤY BÀI CỦA MÌNH =====
+        spec = spec.and((root, query, cb) -> cb.equal(root.get("author").get("userId"), currentUser.getUserId()));
+
+        // ===== KEYWORD FILTER =====
+        if (keyword != null && !keyword.isBlank()) {
+            String kw = "%" + keyword.toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("title")), kw),
+                    cb.like(cb.lower(root.get("contentBody")), kw)));
+        }
+
+        // ===== STATUS FILTER =====
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+
+        return buildPaginationResponse(spec, pageable);
+    }
+
+    private PaginationResponseDTO<List<ArticleResponseDTO>> buildPaginationResponse(
+            Specification<Article> spec, Pageable pageable) {
 
         Page<Article> page = articleRepository.findAll(spec, pageable);
 
@@ -149,16 +166,72 @@ public class ArticleServiceImpl implements ArticleService {
 
     @PreAuthorize("hasPermission(#id, 'ARTICLE', 'UPDATE')")
     @Override
-    public ArticleResponseDTO update(Integer id, ArticleRequestDTO request) {
+    public ArticleResponseDTO update(Integer id, ArticleUpdateRequestDTO request, List<MultipartFile> newDiagrams) {
 
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
 
+        // 1. Update text fields
         article.setTitle(request.getTitle());
         article.setContentBody(request.getContentBody());
 
-        // nếu bài bị reject và student sửa lại -> quay lại pending
-        if(article.getStatus() == Article.ArticleStatus.REJECTED){
+        // 2. Xóa diagrams theo danh sách deleteDiagramIds (cả Cloudinary + DB)
+        if (request.getDeleteDiagramIds() != null && !request.getDeleteDiagramIds().isEmpty()) {
+            for (Integer diagramId : request.getDeleteDiagramIds()) {
+                ArticleDiagram diagram = articleDiagramRepository.findById(diagramId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Diagram not found with id: " + diagramId));
+
+                // Kiểm tra diagram thuộc article này
+                if (!diagram.getArticle().getArticleId().equals(article.getArticleId())) {
+                    throw new AppException("Diagram id " + diagramId + " does not belong to this article",
+                            HttpStatus.BAD_REQUEST);
+                }
+
+                // Xóa trên Cloudinary
+                try {
+                    cloudinaryService.deleteFile(diagram.getImageUrl());
+                } catch (IOException e) {
+                    log.error("Failed to delete diagram from Cloudinary: {}", e.getMessage());
+                }
+
+                // Xóa trong DB
+                article.getDiagrams().remove(diagram);
+                articleDiagramRepository.delete(diagram);
+            }
+        }
+
+        // 3. Cập nhật diagrams cũ (caption, sortOrder)
+        if (request.getExistingDiagrams() != null && !request.getExistingDiagrams().isEmpty()) {
+            for (ArticleDiagramUpdateDTO dto : request.getExistingDiagrams()) {
+                ArticleDiagram diagram = articleDiagramRepository.findById(dto.getDiagramId())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Diagram not found with id: " + dto.getDiagramId()));
+
+                // Kiểm tra diagram thuộc article này
+                if (!diagram.getArticle().getArticleId().equals(article.getArticleId())) {
+                    throw new AppException("Diagram id " + dto.getDiagramId() + " does not belong to this article",
+                            HttpStatus.BAD_REQUEST);
+                }
+
+                if (dto.getCaption() != null) {
+                    diagram.setCaption(dto.getCaption());
+                }
+                if (dto.getSortOrder() != null) {
+                    diagram.setSortOrder(dto.getSortOrder());
+                }
+
+                articleDiagramRepository.save(diagram);
+            }
+        }
+
+        // 4. Upload diagrams mới
+        if (newDiagrams != null && !newDiagrams.isEmpty()) {
+            List<ArticleDiagram> newDiagramEntities = uploadDiagrams(article, newDiagrams, null);
+            article.getDiagrams().addAll(newDiagramEntities);
+        }
+
+        // 5. Nếu bài bị reject và student sửa lại -> quay lại pending
+        if (article.getStatus() == Article.ArticleStatus.REJECTED) {
             article.setStatus(Article.ArticleStatus.PENDING);
             article.setApprover(null);
             article.setApprovedAt(null);
@@ -196,9 +269,6 @@ public class ArticleServiceImpl implements ArticleService {
 
         articleRepository.delete(article);
     }
-
-
-
 
     @Transactional
     public void restore(Integer id) {
@@ -262,7 +332,8 @@ public class ArticleServiceImpl implements ArticleService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
     }
 
-    private List<ArticleDiagram> uploadDiagrams(Article article, List<MultipartFile> files) {
+    private List<ArticleDiagram> uploadDiagrams(Article article, List<MultipartFile> files,
+            List<ArticleDiagramCreateDTO> diagramDetails) {
         List<ArticleDiagram> diagramEntities = new ArrayList<>();
 
         for (int i = 0; i < files.size(); i++) {
@@ -276,7 +347,15 @@ public class ArticleServiceImpl implements ArticleService {
                 ArticleDiagram diagram = new ArticleDiagram();
                 diagram.setArticle(article);
                 diagram.setImageUrl(imageUrl);
-                diagram.setSortOrder(i + 1);
+
+                // Lấy caption và sortOrder từ diagramDetails nếu có
+                if (diagramDetails != null && i < diagramDetails.size()) {
+                    ArticleDiagramCreateDTO detail = diagramDetails.get(i);
+                    diagram.setCaption(detail.getCaption());
+                    diagram.setSortOrder(detail.getSortOrder() != null ? detail.getSortOrder() : i + 1);
+                } else {
+                    diagram.setSortOrder(i + 1);
+                }
 
                 diagramEntities.add(articleDiagramRepository.save(diagram));
             } catch (IOException e) {
