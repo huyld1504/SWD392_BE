@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.multipart.MultipartFile;
+import com.swd392.repositories.CommentRepository;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -47,6 +48,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
     private final ArticleMapper articleMapper;
+    private final CommentRepository commentRepository;
 
     @Override
     public ArticleResponseDTO create(ArticleRequestDTO request, List<MultipartFile> diagrams) {
@@ -178,6 +180,8 @@ public class ArticleServiceImpl implements ArticleService {
 
         // ADMIN delete tất cả
         if (currentUser.getRole() == User.UserRole.ADMIN) {
+            // xóa toàn bộ comment của article
+            commentRepository.deleteByArticleArticleId(id);
             articleRepository.delete(article);
             return;
         }
@@ -193,6 +197,8 @@ public class ArticleServiceImpl implements ArticleService {
 
             throw new AppException("Student cannot delete an approved article", HttpStatus.BAD_REQUEST);
         }
+
+        commentRepository.deleteByArticleArticleId(id);
 
         articleRepository.delete(article);
     }
