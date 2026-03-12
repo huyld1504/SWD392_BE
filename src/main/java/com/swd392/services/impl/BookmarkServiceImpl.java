@@ -1,5 +1,6 @@
 package com.swd392.services.impl;
 
+import com.swd392.configs.RequestContext;
 import com.swd392.dtos.common.PaginationResponseDTO;
 import com.swd392.dtos.responseDTO.ArticleResponseDTO;
 import com.swd392.entities.Article;
@@ -14,6 +15,7 @@ import com.swd392.repositories.UserRepository;
 import com.swd392.services.interfaces.BookmarkService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Transactional
 @Service
 @RequiredArgsConstructor
@@ -38,19 +41,25 @@ public class BookmarkServiceImpl implements BookmarkService {
 
     @Override
     public void addBookmark(Integer articleId) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("\n  ┌─ SERVICE ─ addBookmark\n  │ Article ID : {}", articleId);
 
         User user = getCurrentUser();
 
         if (bookmarkRepository.existsByUser_UserIdAndArticle_ArticleId(
                 user.getUserId(), articleId)) {
-
+            log.error("\n  └─ SERVICE ─ addBookmark\n    Status  : ERROR\n    Reason  : Bookmark already exists");
             throw new AppException("Bookmark already exists");
         }
 
         Article article = articleRepository.findById(articleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
+                .orElseThrow(() -> {
+                    log.error("\n  └─ SERVICE ─ addBookmark\n    Status  : ERROR\n    Reason  : Article not found");
+                    return new ResourceNotFoundException("Article not found");
+                });
 
         if (article.getStatus() != Article.ArticleStatus.APPROVED) {
+            log.error("\n  └─ SERVICE ─ addBookmark\n    Status  : ERROR\n    Reason  : Only approved articles can be bookmarked");
             throw new AppException("Only approved articles can be bookmarked");
         }
 
@@ -59,6 +68,7 @@ public class BookmarkServiceImpl implements BookmarkService {
         bookmark.setArticle(article);
 
         bookmarkRepository.save(bookmark);
+        log.info("\n  └─ SERVICE ─ addBookmark\n    Status  : SUCCESS\n    Saved Bookmark for User ID : {}", user.getUserId());
     }
 
     @Override
@@ -67,6 +77,8 @@ public class BookmarkServiceImpl implements BookmarkService {
             int page,
             int size
     ) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("\n  ┌─ SERVICE ─ getBookmarks\n  │ Keyword : {}\n  │ Page    : {}\n  │ Size    : {}", keyword, page, size);
 
         User user = getCurrentUser();
 
@@ -99,6 +111,8 @@ public class BookmarkServiceImpl implements BookmarkService {
                 .map(Bookmark::getArticle)
                 .map(articleMapper::toDTO)
                 .toList();
+                
+        log.info("\n  └─ SERVICE ─ getBookmarks\n    Status  : SUCCESS\n    Retrieved {} bookmarks out of {}", articles.size(), bookmarkPage.getTotalElements());
 
         return PaginationResponseDTO.<List<ArticleResponseDTO>>builder()
                 .totalItems(bookmarkPage.getTotalElements())
@@ -111,6 +125,8 @@ public class BookmarkServiceImpl implements BookmarkService {
 
     @Override
     public void deleteBookmark(Integer articleId) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("\n  ┌─ SERVICE ─ deleteBookmark\n  │ Article ID : {}", articleId);
 
         User user = getCurrentUser();
 
@@ -118,12 +134,17 @@ public class BookmarkServiceImpl implements BookmarkService {
                 user.getUserId(),
                 articleId
         );
+        
+        log.info("\n  └─ SERVICE ─ deleteBookmark\n    Status  : SUCCESS");
     }
 
     @Override
     public void deleteMultiple(List<Integer> articleIds) {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("\n  ┌─ SERVICE ─ deleteMultiple\n  │ Article IDs : {}", articleIds);
 
         if (articleIds == null || articleIds.isEmpty()) {
+            log.error("\n  └─ SERVICE ─ deleteMultiple\n    Status  : ERROR\n    Reason  : ArticleIds cannot be empty");
             throw new AppException("ArticleIds cannot be empty");
         }
 
@@ -133,14 +154,20 @@ public class BookmarkServiceImpl implements BookmarkService {
                 user.getUserId(),
                 articleIds
         );
+        
+        log.info("\n  └─ SERVICE ─ deleteMultiple\n    Status  : SUCCESS");
     }
 
     @Override
     public void deleteAll() {
+        RequestContext.setCurrentLayer("SERVICE");
+        log.info("\n  ┌─ SERVICE ─ deleteAll");
 
         User user = getCurrentUser();
 
         bookmarkRepository.deleteByUser_UserId(user.getUserId());
+        
+        log.info("\n  └─ SERVICE ─ deleteAll\n    Status  : SUCCESS");
     }
 
     // ================== GET CURRENT USER ==================
@@ -152,13 +179,16 @@ public class BookmarkServiceImpl implements BookmarkService {
                 .getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
+            log.warn("Current User retrieval failed: User not authenticated");
             throw new AppException("User not authenticated", HttpStatus.UNAUTHORIZED);
         }
 
         String email = authentication.getName();
 
         return userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> {
+                    log.warn("Current User retrieval failed: User not found with email: " + email);
+                    return new ResourceNotFoundException("User not found with email: " + email);
+                });
     }
 }
