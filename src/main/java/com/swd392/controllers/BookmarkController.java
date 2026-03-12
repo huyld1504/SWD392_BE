@@ -1,13 +1,14 @@
 package com.swd392.controllers;
 
+import com.swd392.configs.RequestContext;
 import com.swd392.dtos.common.ApiResponse;
 import com.swd392.dtos.common.PaginationResponseDTO;
 import com.swd392.dtos.requestDTO.BookmarkDeleteRequestDTO;
 import com.swd392.dtos.responseDTO.ArticleResponseDTO;
 import com.swd392.services.interfaces.BookmarkService;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -25,6 +26,8 @@ public class BookmarkController {
         return ApiResponse.<Void>builder()
                 .success(true)
                 .message("Bookmark added")
+                .requestId(RequestContext.getRequestId())
+                .timestamp(Instant.now().toString())
                 .build();
     }
 
@@ -38,6 +41,8 @@ public class BookmarkController {
         return ApiResponse.<PaginationResponseDTO<List<ArticleResponseDTO>>>builder()
                 .success(true)
                 .data(bookmarkService.getBookmarks(keyword, page, size))
+                .requestId(RequestContext.getRequestId())
+                .timestamp(Instant.now().toString())
                 .build();
     }
 
@@ -49,6 +54,8 @@ public class BookmarkController {
         return ApiResponse.<Void>builder()
                 .success(true)
                 .message("Bookmark deleted")
+                .requestId(RequestContext.getRequestId())
+                .timestamp(Instant.now().toString())
                 .build();
     }
 
@@ -60,6 +67,8 @@ public class BookmarkController {
         return ApiResponse.<Void>builder()
                 .success(true)
                 .message("Bookmarks deleted")
+                .requestId(RequestContext.getRequestId())
+                .timestamp(Instant.now().toString())
                 .build();
     }
 
@@ -71,6 +80,8 @@ public class BookmarkController {
         return ApiResponse.<Void>builder()
                 .success(true)
                 .message("All bookmarks deleted")
+                .requestId(RequestContext.getRequestId())
+                .timestamp(Instant.now().toString())
                 .build();
     }
 }
