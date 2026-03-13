@@ -39,15 +39,17 @@ public class DonationController {
    */
   @Operation(summary = "Donate to an article", description = "Donate BLUE coins (1-10 per transaction) to an article's author. "
       + "Both sender and receiver use MAIN wallet. "
-      + "Article must be APPROVED. Cannot donate to your own article.", security = @SecurityRequirement(name = "Bearer Authentication"))
+      + "Article must be APPROVED. Cannot donate to your own article. "
+      + "All authenticated users (STUDENT, LECTURE, ADMIN) can donate.", security = @SecurityRequirement(name = "Bearer Authentication"))
   @ApiResponses({
       @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Donation successful", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
       @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request (self-donate, article not approved, insufficient balance)", content = @Content),
       @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+      @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - Sender or receiver wallet is locked", content = @Content),
       @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Article or user not found", content = @Content)
   })
   @PostMapping
-  @PreAuthorize("hasRole('STUDENT')")
+  @PreAuthorize("hasRole('STUDENT') or hasRole('LECTURE') or hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<DonationResponseDTO>> donate(
       Authentication authentication,
       @Valid @RequestBody DonationRequestDTO request) {
@@ -117,7 +119,7 @@ public class DonationController {
       @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
   })
   @GetMapping("/me")
-  @PreAuthorize("hasRole('STUDENT') or hasRole('LECTURE')")
+  @PreAuthorize("hasRole('STUDENT') or hasRole('LECTURE') or hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<PaginationResponseDTO<List<DonationResponseDTO>>>> getMyDonations(
       Authentication authentication,
       @Parameter(description = "Filter from date (ISO format: yyyy-MM-ddTHH:mm:ss)", example = "2026-01-01T00:00:00") @RequestParam(required = false) LocalDateTime fromDate,

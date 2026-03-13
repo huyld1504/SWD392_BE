@@ -277,28 +277,35 @@ public class FeedingServiceImpl implements FeedingService {
     int skipped = 0;
 
     try {
-      List<User> students = userRepository.findAll().stream()
-          .filter(u -> u.getRole() == User.UserRole.STUDENT)
+      List<User> activeUsers = userRepository.findAll().stream()
           .filter(u -> u.getStatus() == User.UserStatus.ACTIVE)
           .toList();
 
-      log.info("\n    │ Found {} active students", students.size());
+      log.info("\n    │ Found {} active users (all roles)", activeUsers.size());
 
-      for (User student : students) {
+      for (User user : activeUsers) {
         Optional<Wallet> walletOpt = walletRepository
-            .findByUserAndWalletType(student, Wallet.WalletType.MAIN);
+            .findByUserAndWalletType(user, Wallet.WalletType.MAIN);
 
+        Wallet mainWallet;
         if (walletOpt.isEmpty()) {
-          skipped++;
-          log.warn("\n    │ SKIP: {} - No MAIN wallet", student.getEmail());
-          continue;
+          // Auto-create MAIN wallet for user who doesn't have one
+          mainWallet = new Wallet();
+          mainWallet.setUser(user);
+          mainWallet.setWalletType(Wallet.WalletType.MAIN);
+          mainWallet.setCurrency(Wallet.Currency.BLUE);
+          mainWallet.setStatus(Wallet.WalletStatus.ACTIVE);
+          mainWallet.setBalance(BigDecimal.ZERO);
+          walletRepository.save(mainWallet);
+          log.info("\n    │ CREATED MAIN wallet for: {}", user.getEmail());
+        } else {
+          mainWallet = walletOpt.get();
         }
 
-        Wallet mainWallet = walletOpt.get();
 
         BigDecimal snapshotEarned = BigDecimal.ZERO;
         Optional<Wallet> earnedOpt = walletRepository
-            .findByUserAndWalletType(student, Wallet.WalletType.EARNED);
+            .findByUserAndWalletType(user, Wallet.WalletType.EARNED);
         if (earnedOpt.isPresent()) {
           snapshotEarned = earnedOpt.get().getBalance();
         }
@@ -316,7 +323,7 @@ public class FeedingServiceImpl implements FeedingService {
 
         UserFeeding feeding = new UserFeeding();
         feeding.setFeedingPeriod(period);
-        feeding.setUser(student);
+        feeding.setUser(user);
         feeding.setTransaction(transaction);
         feeding.setSnapshotEarnedBalance(snapshotEarned);
         feeding.setAmountReceived(period.getGrantAmount());
@@ -330,7 +337,7 @@ public class FeedingServiceImpl implements FeedingService {
       feedingPeriodRepository.save(period);
 
       log.info(
-          "\n    └─ SERVICE ─ processFeeding\n      Status    : COMPLETED\n      Processed : {}\n      Skipped   : {}",
+          "\n    └─ SERVICE ─ processFeeding\n      Status    : COMPLETED\n      Processed : {} users (all roles)\n      Skipped   : {}",
           processed, skipped);
 
     } catch (Exception e) {

@@ -120,7 +120,9 @@ public class FeedingController {
 
         // ==================== TRIGGER NOW ====================
 
-        @Operation(summary = "Trigger feeding reset now (Admin)", description = "Immediately execute a feeding reset for all active students. Once per month.", security = @SecurityRequirement(name = "Bearer Authentication"))
+        @Operation(summary = "Trigger feeding reset now (Admin)", description = "Immediately execute a feeding reset for all active users (STUDENT, LECTURE, ADMIN). "
+                        + "If a user does not have a MAIN wallet, one will be auto-created. "
+                        + "All MAIN wallets are reset to the default grant amount. Once per month.", security = @SecurityRequirement(name = "Bearer Authentication"))
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Feeding completed"),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Already executing or completed this month", content = @Content)
@@ -139,7 +141,7 @@ public class FeedingController {
                                                 .success(true)
                                                 .message("Feeding reset completed. "
                                                                 + result.getTotalStudentsProcessed()
-                                                                + " students processed.")
+                                                                + " users processed.")
                                                 .data(result)
                                                 .requestId(RequestContext.getRequestId())
                                                 .timestamp(LocalDateTime.now().toString())
