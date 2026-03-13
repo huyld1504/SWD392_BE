@@ -2,7 +2,9 @@ package com.swd392.services.interfaces;
 
 import com.swd392.dtos.common.PaginationResponseDTO;
 import com.swd392.dtos.requestDTO.ArticleRequestDTO;
+import com.swd392.dtos.requestDTO.ArticleUpdateRequestDTO;
 import com.swd392.dtos.responseDTO.ArticleResponseDTO;
+import com.swd392.entities.Article;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,11 +16,17 @@ public interface ArticleService {
 
     ArticleResponseDTO getById(Integer id);
 
-    PaginationResponseDTO<List<ArticleResponseDTO>> getAll(String keyword, Pageable pageable);
+    PaginationResponseDTO<List<ArticleResponseDTO>> getAll(String keyword, Article.ArticleStatus status,
+            Integer topicId, Pageable pageable);
 
-    ArticleResponseDTO update(Integer id, ArticleRequestDTO request);
+    PaginationResponseDTO<List<ArticleResponseDTO>> getMyArticles(String keyword, Article.ArticleStatus status,
+            Integer topicId, Pageable pageable);
+
+    ArticleResponseDTO update(Integer id, ArticleUpdateRequestDTO request, List<MultipartFile> newDiagrams);
 
     void delete(Integer id);
+
+    void restore(Integer id);
 
     ArticleResponseDTO approve(Integer articleId);
 

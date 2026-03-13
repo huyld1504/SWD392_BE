@@ -23,6 +23,9 @@ public class RequestTracingFilter extends OncePerRequestFilter {
   private static final String REQUEST_URI = "requestUri";
   private static final String REQUEST_METHOD = "requestMethod";
 
+  private static final String LINE = "═══════════════════════════════════════════════════════════════";
+  private static final String THIN_LINE = "───────────────────────────────────────────────────────────────";
+
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
@@ -46,19 +49,21 @@ public class RequestTracingFilter extends OncePerRequestFilter {
     long startTime = System.currentTimeMillis();
 
     try {
-      log.info("REQUEST START | Method: {} | URI: {} | RequestID: {}",
-          request.getMethod(), request.getRequestURI(), requestId);
+      log.info(
+          "\n{}\n  ► REQUEST START\n{}\n  Request ID : {}\n  Method     : {}\n  URI        : {}\n  Remote IP  : {}\n{}",
+          LINE, THIN_LINE, requestId, request.getMethod(), request.getRequestURI(),
+          request.getRemoteAddr(), LINE);
 
       filterChain.doFilter(request, response);
 
       long duration = System.currentTimeMillis() - startTime;
-      log.info("REQUEST END | Status: {} | Duration: {}ms | RequestID: {}",
-          response.getStatus(), duration, requestId);
+      log.info("\n{}\n  ◄ REQUEST END\n{}\n  Request ID : {}\n  Status     : {}\n  Duration   : {} ms\n{}",
+          LINE, THIN_LINE, requestId, response.getStatus(), duration, LINE);
 
     } catch (Exception e) {
       long duration = System.currentTimeMillis() - startTime;
-      log.error("REQUEST FAILED | Duration: {}ms | RequestID: {} | Error: {}",
-          duration, requestId, e.getMessage(), e);
+      log.error("\n{}\n  ✖ REQUEST FAILED\n{}\n  Request ID : {}\n  Duration   : {} ms\n  Error      : {}\n{}",
+          LINE, THIN_LINE, requestId, duration, e.getMessage(), LINE, e);
       throw e;
     } finally {
       // Clean up MDC and RequestContext
