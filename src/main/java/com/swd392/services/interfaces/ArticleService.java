@@ -17,10 +17,10 @@ public interface ArticleService {
     ArticleResponseDTO getById(Integer id);
 
     PaginationResponseDTO<List<ArticleResponseDTO>> getAll(String keyword, Article.ArticleStatus status,
-            Pageable pageable);
+            Integer topicId, Pageable pageable);
 
     PaginationResponseDTO<List<ArticleResponseDTO>> getMyArticles(String keyword, Article.ArticleStatus status,
-            Pageable pageable);
+            Integer topicId, Pageable pageable);
 
     ArticleResponseDTO update(Integer id, ArticleUpdateRequestDTO request, List<MultipartFile> newDiagrams);
 

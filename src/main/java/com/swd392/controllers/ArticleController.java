@@ -53,6 +53,7 @@ public class ArticleController {
         public ResponseEntity<ApiResponse<PaginationResponseDTO<List<ArticleResponseDTO>>>> getMyArticles(
                         @RequestParam(value = "keyword", required = false) String keyword,
                         @RequestParam(value = "status", required = false) Article.ArticleStatus status,
+                        @RequestParam(value = "topicId", required = false) Integer topicId,
                         @RequestParam(value = "page", defaultValue = "0") int page,
                         @RequestParam(value = "size", defaultValue = "10") int size,
                         @RequestParam(value = "sort", defaultValue = "createdAt") String sort,
@@ -63,7 +64,7 @@ public class ArticleController {
                 Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
                 PaginationResponseDTO<List<ArticleResponseDTO>> result = articleService.getMyArticles(keyword, status,
-                                pageable);
+                                topicId, pageable);
 
                 return ResponseEntity.ok(ApiResponse.<PaginationResponseDTO<List<ArticleResponseDTO>>>builder()
                                 .success(true)
@@ -93,6 +94,7 @@ public class ArticleController {
         public ResponseEntity<ApiResponse<PaginationResponseDTO<List<ArticleResponseDTO>>>> getAll(
                         @RequestParam(value = "keyword", required = false) String keyword,
                         @RequestParam(value = "status", required = false) Article.ArticleStatus status,
+                        @RequestParam(value = "topicId", required = false) Integer topicId,
                         @RequestParam(value = "page", defaultValue = "0") int page,
                         @RequestParam(value = "size", defaultValue = "10") int size,
                         @RequestParam(value = "sort", defaultValue = "createdAt") String sort,
@@ -103,7 +105,7 @@ public class ArticleController {
                 Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
                 PaginationResponseDTO<List<ArticleResponseDTO>> result = articleService.getAll(keyword, status,
-                                pageable);
+                                topicId, pageable);
 
                 return ResponseEntity.ok(ApiResponse.<PaginationResponseDTO<List<ArticleResponseDTO>>>builder()
                                 .success(true)

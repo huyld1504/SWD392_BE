@@ -90,7 +90,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public PaginationResponseDTO<List<ArticleResponseDTO>> getAll(String keyword, Article.ArticleStatus status,
-            Pageable pageable) {
+            Integer topicId, Pageable pageable) {
 
         User currentUser = getCurrentUser();
         Specification<Article> spec = Specification.where(null);
@@ -101,6 +101,11 @@ public class ArticleServiceImpl implements ArticleService {
             spec = spec.and((root, query, cb) -> cb.or(
                     cb.like(cb.lower(root.get("title")), kw),
                     cb.like(cb.lower(root.get("contentBody")), kw)));
+        }
+
+        // ===== TOPIC FILTER =====
+        if (topicId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("topic").get("topicId"), topicId));
         }
 
         // ===== ROLE-BASED FILTER =====
@@ -121,7 +126,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public PaginationResponseDTO<List<ArticleResponseDTO>> getMyArticles(String keyword, Article.ArticleStatus status,
-            Pageable pageable) {
+            Integer topicId, Pageable pageable) {
 
         User currentUser = getCurrentUser();
         Specification<Article> spec = Specification.where(null);
@@ -135,6 +140,11 @@ public class ArticleServiceImpl implements ArticleService {
             spec = spec.and((root, query, cb) -> cb.or(
                     cb.like(cb.lower(root.get("title")), kw),
                     cb.like(cb.lower(root.get("contentBody")), kw)));
+        }
+
+        // ===== TOPIC FILTER =====
+        if (topicId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("topic").get("topicId"), topicId));
         }
 
         // ===== STATUS FILTER =====
