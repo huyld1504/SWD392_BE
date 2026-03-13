@@ -3,6 +3,7 @@ package com.swd392.services.impl;
 import com.swd392.dtos.common.PaginationResponseDTO;
 import com.swd392.dtos.requestDTO.CommentRequestDTO;
 import com.swd392.dtos.responseDTO.CommentResponseDTO;
+import com.swd392.dtos.responseDTO.UserInfoDTO;
 import com.swd392.entities.Article;
 import com.swd392.entities.Comment;
 import com.swd392.entities.User;
@@ -159,10 +160,18 @@ public class CommentServiceImpl implements CommentService {
 
     private CommentResponseDTO mapToDTO(Comment comment) {
 
+        User user = comment.getUser();
+
         return CommentResponseDTO.builder()
                 .commentId(comment.getCommentId())
-                .userId(comment.getUser().getUserId())
-                .userName(comment.getUser().getFullName())
+                .user(
+                        new UserInfoDTO(
+                                user.getUserId(),
+                                user.getFullName(),
+                                user.getEmail(),
+                                user.getAvatarUrl()
+                        )
+                )
                 .content(comment.getContent())
                 .ratingStar(comment.getRatingStar())
                 .isPinned(comment.getIsPinned())

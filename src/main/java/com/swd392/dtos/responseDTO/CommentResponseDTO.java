@@ -12,9 +12,7 @@ public class CommentResponseDTO {
 
     private Integer commentId;
 
-    private Long userId;
-
-    private String userName;
+    private UserInfoDTO user;
 
     private String content;
 
