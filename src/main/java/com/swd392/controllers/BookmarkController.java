@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/bookmarks")
+@RequestMapping("/api/v1/bookmarks")
 @RequiredArgsConstructor
 @Tag(name = "Bookmark", description = "Bookmark management APIs")
 public class BookmarkController {
