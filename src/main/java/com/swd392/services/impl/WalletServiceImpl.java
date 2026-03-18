@@ -215,7 +215,9 @@ public class WalletServiceImpl implements WalletService {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new AppException("User not found", HttpStatus.NOT_FOUND));
 
-    if (!wallet.getUser().getUserId().equals(user.getUserId())) {
+    // Admin can view any wallet's transactions; non-admin can only view their own
+    if (user.getRole() != User.UserRole.ADMIN
+        && !wallet.getUser().getUserId().equals(user.getUserId())) {
       throw new AppException("You can only view transactions of your own wallet", HttpStatus.FORBIDDEN);
     }
 
@@ -247,6 +249,8 @@ public class WalletServiceImpl implements WalletService {
     boolean isSender = transaction.getSenderWallet() != null
         && transaction.getSenderWallet().getWalletId().equals(currentWalletId);
 
+    String direction = isSender ? "OUT" : "IN";
+
     User counterparty;
     if (isSender && transaction.getReceiverWallet() != null) {
       counterparty = transaction.getReceiverWallet().getUser();
@@ -259,10 +263,99 @@ public class WalletServiceImpl implements WalletService {
     return new TransactionResponseDTO(
         transaction.getTransactionId(),
         transaction.getTransactionType().name(),
+        direction,
         transaction.getAmount(),
         transaction.getCurrency().name(),
         counterparty != null ? counterparty.getFullName() : "System",
         counterparty != null ? counterparty.getEmail() : null,
         transaction.getCreatedAt());
   }
+
+  // ==================== SYSTEM WALLET ====================
+
+  private static final BigDecimal SYSTEM_WALLET_INITIAL_BALANCE = new BigDecimal("100000");
+
+  @Override
+  @Transactional
+  public void initializeSystemWallet() {
+    if (walletRepository.findByWalletType(Wallet.WalletType.SYSTEM).isPresent()) {
+      log.info("System wallet already exists, skipping initialization.");
+      return;
+    }
+
+    Wallet systemWallet = new Wallet();
+    systemWallet.setUser(null);
+    systemWallet.setWalletType(Wallet.WalletType.SYSTEM);
+    systemWallet.setCurrency(Wallet.Currency.BLUE);
+    systemWallet.setBalance(SYSTEM_WALLET_INITIAL_BALANCE);
+    systemWallet.setStatus(Wallet.WalletStatus.ACTIVE);
+    walletRepository.save(systemWallet);
+
+    log.info("System wallet created with initial balance: {}", SYSTEM_WALLET_INITIAL_BALANCE);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public WalletResponseDTO getSystemWallet() {
+    Wallet systemWallet = walletRepository.findByWalletType(Wallet.WalletType.SYSTEM)
+        .orElseThrow(() -> new AppException("System wallet not found", HttpStatus.NOT_FOUND));
+    return walletMapper.toDTO(systemWallet);
+  }
+
+  @Override
+  @Transactional
+  public WalletResponseDTO topUpSystemWallet(BigDecimal amount) {
+    if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new AppException("Top-up amount must be greater than 0", HttpStatus.BAD_REQUEST);
+    }
+
+    Wallet systemWallet = walletRepository.findByWalletType(Wallet.WalletType.SYSTEM)
+        .orElseThrow(() -> new AppException("System wallet not found", HttpStatus.NOT_FOUND));
+
+    systemWallet.setBalance(systemWallet.getBalance().add(amount));
+    walletRepository.save(systemWallet);
+
+    // Record top-up transaction
+    Transaction transaction = new Transaction();
+    transaction.setSenderWallet(null);
+    transaction.setReceiverWallet(systemWallet);
+    transaction.setAmount(amount);
+    transaction.setCurrency(Transaction.Currency.BLUE);
+    transaction.setTransactionType(Transaction.TransactionType.TOPUP);
+    transactionRepository.save(transaction);
+
+    log.info("✅ System wallet topped up: +{} | New balance: {}", amount, systemWallet.getBalance());
+
+    return walletMapper.toDTO(systemWallet);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PaginationResponseDTO<List<TransactionResponseDTO>> getSystemWalletTransactions(
+      LocalDateTime fromDate, LocalDateTime toDate, int page, int size) {
+
+    Wallet systemWallet = walletRepository.findByWalletType(Wallet.WalletType.SYSTEM)
+        .orElseThrow(() -> new AppException("System wallet not found", HttpStatus.NOT_FOUND));
+
+    Specification<Transaction> spec = Specification
+        .where(TransactionSpecification.hasWalletId(systemWallet.getWalletId()))
+        .and(TransactionSpecification.createdAfter(fromDate))
+        .and(TransactionSpecification.createdBefore(toDate));
+
+    Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+    Page<Transaction> txPage = transactionRepository.findAll(spec, pageable);
+
+    List<TransactionResponseDTO> dtos = txPage.getContent().stream()
+        .map(tx -> mapTransactionToDTO(tx, systemWallet.getWalletId()))
+        .toList();
+
+    return PaginationResponseDTO.<List<TransactionResponseDTO>>builder()
+        .totalItems(txPage.getTotalElements())
+        .totalPages(txPage.getTotalPages())
+        .currentPage(page)
+        .pageSize(size)
+        .data(dtos)
+        .build();
+  }
 }
+

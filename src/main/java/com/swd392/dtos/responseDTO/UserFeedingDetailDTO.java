@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public record UserFeedingDetailDTO(
     Integer feedingId,
-    UserInfoDTO student,
+    UserInfoDTO user,
     BigDecimal amountReceived,
     BigDecimal snapshotEarnedBalance) {
 }

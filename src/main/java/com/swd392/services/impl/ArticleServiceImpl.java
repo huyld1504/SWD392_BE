@@ -55,8 +55,17 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public ArticleResponseDTO create(ArticleRequestDTO request, List<MultipartFile> diagrams) {
+        return createArticle(request, diagrams, Article.ArticleStatus.PENDING);
+    }
 
-        // Get current authenticated user as author
+    @Override
+    public ArticleResponseDTO saveDraft(ArticleRequestDTO request, List<MultipartFile> diagrams) {
+        return createArticle(request, diagrams, Article.ArticleStatus.DRAFT);
+    }
+
+    private ArticleResponseDTO createArticle(ArticleRequestDTO request, List<MultipartFile> diagrams,
+            Article.ArticleStatus status) {
+
         User author = getCurrentUser();
 
         Topic topic = topicRepository.findById(request.getTopicId())
@@ -67,7 +76,7 @@ public class ArticleServiceImpl implements ArticleService {
         article.setContentBody(request.getContentBody());
         article.setTopic(topic);
         article.setAuthor(author);
-        article.setStatus(Article.ArticleStatus.PENDING);
+        article.setStatus(status);
 
         Article saved = articleRepository.save(article);
 
@@ -183,6 +192,18 @@ public class ArticleServiceImpl implements ArticleService {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
 
+        // ===== CHỈ CHO PHÉP EDIT KHI DRAFT HOẶC REJECTED =====
+        if (article.getStatus() == Article.ArticleStatus.PENDING) {
+            throw new AppException(
+                    "Cannot edit article while it is being reviewed (PENDING). Please wait for the review result.",
+                    HttpStatus.BAD_REQUEST);
+        }
+        if (article.getStatus() == Article.ArticleStatus.APPROVED) {
+            throw new AppException(
+                    "Cannot edit an approved article.",
+                    HttpStatus.BAD_REQUEST);
+        }
+
         // 1. Update text fields
         article.setTitle(request.getTitle());
         article.setContentBody(request.getContentBody());
@@ -242,12 +263,47 @@ public class ArticleServiceImpl implements ArticleService {
             article.getDiagrams().addAll(newDiagramEntities);
         }
 
-        // 5. Nếu bài bị reject và student sửa lại -> quay lại pending
-        if (article.getStatus() == Article.ArticleStatus.REJECTED) {
-            article.setStatus(Article.ArticleStatus.PENDING);
-            article.setApprover(null);
-            article.setApprovedAt(null);
+        // 5. Giữ nguyên status (DRAFT hoặc REJECTED) — student phải dùng submit để chuyển PENDING
+        // Không tự động chuyển status khi edit
+
+        return articleMapper.toDTO(articleRepository.save(article));
+    }
+
+    // ==================== SUBMIT ARTICLE (DRAFT/REJECTED → PENDING) ====================
+
+    @Override
+    @Transactional
+    public ArticleResponseDTO submitArticle(Integer id) {
+
+        Article article = articleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
+
+        User currentUser = getCurrentUser();
+
+        // Chỉ author mới được submit
+        if (!article.getAuthor().getUserId().equals(currentUser.getUserId())) {
+            throw new AccessDeniedException("You can only submit your own article");
         }
+
+        // Chỉ cho phép submit khi DRAFT hoặc REJECTED
+        if (article.getStatus() != Article.ArticleStatus.DRAFT
+                && article.getStatus() != Article.ArticleStatus.REJECTED) {
+            throw new AppException(
+                    "Can only submit articles with DRAFT or REJECTED status. Current status: " + article.getStatus(),
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        // Validate bài viết trước khi submit
+        if (article.getTitle() == null || article.getTitle().isBlank()) {
+            throw new AppException("Article title is required before submitting", HttpStatus.BAD_REQUEST);
+        }
+        if (article.getContentBody() == null || article.getContentBody().isBlank()) {
+            throw new AppException("Article content is required before submitting", HttpStatus.BAD_REQUEST);
+        }
+
+        article.setStatus(Article.ArticleStatus.PENDING);
+        article.setApprover(null);
+        article.setApprovedAt(null);
 
         return articleMapper.toDTO(articleRepository.save(article));
     }

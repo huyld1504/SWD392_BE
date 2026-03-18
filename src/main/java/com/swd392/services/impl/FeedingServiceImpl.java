@@ -244,7 +244,7 @@ public class FeedingServiceImpl implements FeedingService {
     List<UserFeeding> userFeedings = userFeedingRepository.findByFeedingPeriodPeriodId(periodId);
 
     // Sort by snapshotEarnedBalance DESC → top donated students first
-    List<UserFeedingDetailDTO> studentDetails = userFeedings.stream()
+    List<UserFeedingDetailDTO> userDetails = userFeedings.stream()
         .map(uf -> new UserFeedingDetailDTO(
             uf.getFeedingId(),
             mapToUserInfo(uf.getUser()),
@@ -253,7 +253,18 @@ public class FeedingServiceImpl implements FeedingService {
         .sorted((a, b) -> b.snapshotEarnedBalance().compareTo(a.snapshotEarnedBalance()))
         .toList();
 
-    log.info("\n    └─ SERVICE ─ getFeedingDetail\n      Students : {}", studentDetails.size());
+    // Calculate summary totals
+    BigDecimal totalCoinsGranted = userFeedings.stream()
+        .map(UserFeeding::getAmountReceived)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    BigDecimal totalCoinsEarned = userFeedings.stream()
+        .map(UserFeeding::getSnapshotEarnedBalance)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    log.info(
+        "\n    └─ SERVICE ─ getFeedingDetail\n      Users            : {}\n      Total Granted     : {}\n      Total Earned      : {}",
+        userDetails.size(), totalCoinsGranted, totalCoinsEarned);
 
     return FeedingPeriodResponseDTO.builder()
         .periodId(period.getPeriodId())
@@ -265,8 +276,10 @@ public class FeedingServiceImpl implements FeedingService {
         .scheduledAt(period.getScheduledAt())
         .executedAt(period.getExecutedAt())
         .createdAt(period.getCreatedAt())
-        .totalStudents(studentDetails.size())
-        .students(studentDetails)
+        .totalUsers(userDetails.size())
+        .totalCoinsGranted(totalCoinsGranted)
+        .totalCoinsEarned(totalCoinsEarned)
+        .users(userDetails)
         .build();
   }
 
@@ -277,11 +290,25 @@ public class FeedingServiceImpl implements FeedingService {
     int skipped = 0;
 
     try {
+      // Get system wallet as the source of coins
+      Wallet systemWallet = walletRepository.findByWalletType(Wallet.WalletType.SYSTEM)
+          .orElseThrow(() -> new AppException("System wallet not found. Please initialize it first.", HttpStatus.NOT_FOUND));
+
       List<User> activeUsers = userRepository.findAll().stream()
           .filter(u -> u.getStatus() == User.UserStatus.ACTIVE)
           .toList();
 
-      log.info("\n    │ Found {} active users (all roles)", activeUsers.size());
+      // Validate system wallet has enough balance
+      BigDecimal totalRequired = period.getGrantAmount().multiply(BigDecimal.valueOf(activeUsers.size()));
+      if (systemWallet.getBalance().compareTo(totalRequired) < 0) {
+        throw new AppException(
+            "System wallet has insufficient balance. Required: " + totalRequired
+                + ", Available: " + systemWallet.getBalance(),
+            HttpStatus.BAD_REQUEST);
+      }
+
+      log.info("\n    │ Found {} active users | System wallet balance: {} | Required: {}",
+          activeUsers.size(), systemWallet.getBalance(), totalRequired);
 
       for (User user : activeUsers) {
         Optional<Wallet> walletOpt = walletRepository
@@ -302,7 +329,6 @@ public class FeedingServiceImpl implements FeedingService {
           mainWallet = walletOpt.get();
         }
 
-
         BigDecimal snapshotEarned = BigDecimal.ZERO;
         Optional<Wallet> earnedOpt = walletRepository
             .findByUserAndWalletType(user, Wallet.WalletType.EARNED);
@@ -310,11 +336,16 @@ public class FeedingServiceImpl implements FeedingService {
           snapshotEarned = earnedOpt.get().getBalance();
         }
 
+        // Reset user wallet to grant amount
         mainWallet.setBalance(period.getGrantAmount());
         walletRepository.save(mainWallet);
 
+        // Deduct from system wallet
+        systemWallet.setBalance(systemWallet.getBalance().subtract(period.getGrantAmount()));
+
+        // Create transaction: System Wallet → User Wallet
         Transaction transaction = new Transaction();
-        transaction.setSenderWallet(null);
+        transaction.setSenderWallet(systemWallet);
         transaction.setReceiverWallet(mainWallet);
         transaction.setAmount(period.getGrantAmount());
         transaction.setCurrency(Transaction.Currency.BLUE);
@@ -332,13 +363,16 @@ public class FeedingServiceImpl implements FeedingService {
         processed++;
       }
 
+      // Save updated system wallet balance
+      walletRepository.save(systemWallet);
+
       period.setStatus(FeedingPeriod.PeriodStatus.COMPLETED);
       period.setExecutedAt(LocalDateTime.now());
       feedingPeriodRepository.save(period);
 
       log.info(
-          "\n    └─ SERVICE ─ processFeeding\n      Status    : COMPLETED\n      Processed : {} users (all roles)\n      Skipped   : {}",
-          processed, skipped);
+          "\n    └─ SERVICE ─ processFeeding\n      Status           : COMPLETED\n      Processed        : {} users\n      System balance   : {}",
+          processed, systemWallet.getBalance());
 
     } catch (Exception e) {
       period.setStatus(FeedingPeriod.PeriodStatus.FAILED);
@@ -368,15 +402,15 @@ public class FeedingServiceImpl implements FeedingService {
         .scheduledAt(period.getScheduledAt())
         .executedAt(period.getExecutedAt())
         .createdAt(period.getCreatedAt())
-        .totalStudentsProcessed(processed)
-        .totalStudentsSkipped(skipped)
+        .totalUsersProcessed(processed)
+        .totalUsersSkipped(skipped)
         .build();
   }
 
   /**
-   * Map for list view (no students, no processed/skipped).
+   * Map for list view (no users detail, no processed/skipped).
    */
-  private FeedingPeriodResponseDTO mapToResponseDTOForList(FeedingPeriod period, int totalStudents) {
+  private FeedingPeriodResponseDTO mapToResponseDTOForList(FeedingPeriod period, int totalUsers) {
     return FeedingPeriodResponseDTO.builder()
         .periodId(period.getPeriodId())
         .periodName(period.getPeriodName())
@@ -387,7 +421,7 @@ public class FeedingServiceImpl implements FeedingService {
         .scheduledAt(period.getScheduledAt())
         .executedAt(period.getExecutedAt())
         .createdAt(period.getCreatedAt())
-        .totalStudents(totalStudents)
+        .totalUsers(totalUsers)
         .build();
   }
 

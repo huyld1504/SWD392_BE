@@ -18,4 +18,6 @@ public interface WalletRepository extends JpaRepository<Wallet, Integer>, JpaSpe
   boolean existsByUserAndWalletType(User user, Wallet.WalletType walletType);
 
   Optional<Wallet> findByUserAndWalletType(User user, Wallet.WalletType walletType);
+
+  Optional<Wallet> findByWalletType(Wallet.WalletType walletType);
 }

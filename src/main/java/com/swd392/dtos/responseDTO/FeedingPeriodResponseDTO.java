@@ -27,12 +27,16 @@ public class FeedingPeriodResponseDTO {
   private LocalDateTime scheduledAt;
   private LocalDateTime executedAt;
   private LocalDateTime createdAt;
-  private Integer totalStudents;
+  private Integer totalUsers;
 
   // ===== Trigger/Schedule result (chỉ có khi trigger hoặc schedule) =====
-  private Integer totalStudentsProcessed;
-  private Integer totalStudentsSkipped;
+  private Integer totalUsersProcessed;
+  private Integer totalUsersSkipped;
+
+  // ===== Summary (chỉ có khi gọi GET /{periodId}) =====
+  private BigDecimal totalCoinsGranted;
+  private BigDecimal totalCoinsEarned;
 
   // ===== Detail (chỉ có khi gọi GET /{periodId}) =====
-  private List<UserFeedingDetailDTO> students;
+  private List<UserFeedingDetailDTO> users;
 }

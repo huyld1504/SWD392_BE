@@ -41,7 +41,25 @@ public class ArticleController {
                 return ResponseEntity.status(HttpStatus.CREATED)
                                 .body(ApiResponse.<ArticleResponseDTO>builder()
                                                 .success(true)
-                                                .message("Article created successfully")
+                                                .message("Article created and submitted for review")
+                                                .data(result)
+                                                .requestId(RequestContext.getRequestId())
+                                                .timestamp(LocalDateTime.now().toString())
+                                                .build());
+        }
+
+        @PostMapping(value = "/draft", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        @PreAuthorize("hasAnyRole('STUDENT', 'LECTURE')")
+        public ResponseEntity<ApiResponse<ArticleResponseDTO>> saveDraft(
+                        @Valid @ModelAttribute ArticleRequestDTO request,
+                        @RequestPart(value = "diagrams", required = false) List<MultipartFile> diagrams) {
+
+                ArticleResponseDTO result = articleService.saveDraft(request, diagrams);
+
+                return ResponseEntity.status(HttpStatus.CREATED)
+                                .body(ApiResponse.<ArticleResponseDTO>builder()
+                                                .success(true)
+                                                .message("Article draft saved successfully")
                                                 .data(result)
                                                 .requestId(RequestContext.getRequestId())
                                                 .timestamp(LocalDateTime.now().toString())
@@ -128,6 +146,22 @@ public class ArticleController {
                 return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
                                 .success(true)
                                 .message("Article updated successfully")
+                                .data(result)
+                                .requestId(RequestContext.getRequestId())
+                                .timestamp(LocalDateTime.now().toString())
+                                .build());
+        }
+
+        @PutMapping("/{id}/submit")
+        @PreAuthorize("hasAnyRole('STUDENT', 'LECTURE')")
+        public ResponseEntity<ApiResponse<ArticleResponseDTO>> submit(
+                        @PathVariable Integer id) {
+
+                ArticleResponseDTO result = articleService.submitArticle(id);
+
+                return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
+                                .success(true)
+                                .message("Article submitted for review successfully")
                                 .data(result)
                                 .requestId(RequestContext.getRequestId())
                                 .timestamp(LocalDateTime.now().toString())

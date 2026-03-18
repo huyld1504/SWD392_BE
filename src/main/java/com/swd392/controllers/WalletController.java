@@ -184,10 +184,10 @@ public class WalletController {
         /**
          * Get all transactions of a specific wallet (paginated).
          */
-        @Operation(summary = "Get wallet transactions", description = "Retrieve all transactions of a specific wallet with pagination, ordered by newest first. Only the wallet owner can view.", security = @SecurityRequirement(name = "Bearer Authentication"))
+        @Operation(summary = "Get wallet transactions", description = "Retrieve all transactions of a specific wallet with pagination, ordered by newest first. Wallet owners can view their own; Admin can view any wallet.", security = @SecurityRequirement(name = "Bearer Authentication"))
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Transactions retrieved successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
-                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - Not the wallet owner", content = @Content),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - Not the wallet owner and not an admin", content = @Content),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Wallet not found", content = @Content)
         })
         @GetMapping("/{walletId}/transactions")
@@ -214,6 +214,89 @@ public class WalletController {
                                 ApiResponse.<PaginationResponseDTO<List<com.swd392.dtos.responseDTO.TransactionResponseDTO>>>builder()
                                                 .success(true)
                                                 .message("Transactions retrieved successfully")
+                                                .data(result)
+                                                .requestId(RequestContext.getRequestId())
+                                                .timestamp(LocalDateTime.now().toString())
+                                                .build());
+        }
+
+        // ==================== SYSTEM WALLET ====================
+
+        /**
+         * Get system wallet info (Admin only).
+         */
+        @Operation(summary = "Get system wallet (Admin)", description = "Retrieve the system wallet info including balance. This wallet is the source of coins for feeding. Admin access only.", security = @SecurityRequirement(name = "Bearer Authentication"))
+        @ApiResponses({
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "System wallet retrieved", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "System wallet not found", content = @Content)
+        })
+        @GetMapping("/system")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<WalletResponseDTO>> getSystemWallet() {
+                RequestContext.setCurrentLayer("CONTROLLER");
+                log.info("\n  \u250c\u2500 CONTROLLER \u2500 getSystemWallet");
+
+                WalletResponseDTO result = walletService.getSystemWallet();
+
+                return ResponseEntity.ok(
+                                ApiResponse.<WalletResponseDTO>builder()
+                                                .success(true)
+                                                .message("System wallet retrieved successfully")
+                                                .data(result)
+                                                .requestId(RequestContext.getRequestId())
+                                                .timestamp(LocalDateTime.now().toString())
+                                                .build());
+        }
+
+        /**
+         * Top up system wallet (Admin only).
+         */
+        @Operation(summary = "Top up system wallet (Admin)", description = "Add coins to the system wallet. This wallet is used as the source for feeding coin distribution.", security = @SecurityRequirement(name = "Bearer Authentication"))
+        @ApiResponses({
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "System wallet topped up", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid amount", content = @Content),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "System wallet not found", content = @Content)
+        })
+        @PutMapping("/system/topup")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<WalletResponseDTO>> topUpSystemWallet(
+                        @Valid @RequestBody com.swd392.dtos.requestDTO.TopUpSystemWalletRequestDTO request) {
+                RequestContext.setCurrentLayer("CONTROLLER");
+                log.info("\n  \u250c\u2500 CONTROLLER \u2500 topUpSystemWallet\n  \u2502 Amount : {}", request.getAmount());
+
+                WalletResponseDTO result = walletService.topUpSystemWallet(request.getAmount());
+
+                return ResponseEntity.ok(
+                                ApiResponse.<WalletResponseDTO>builder()
+                                                .success(true)
+                                                .message("System wallet topped up successfully. New balance: " + result.balance())
+                                                .data(result)
+                                                .requestId(RequestContext.getRequestId())
+                                                .timestamp(LocalDateTime.now().toString())
+                                                .build());
+        }
+
+        /**
+         * Get system wallet transactions (Admin only).
+         */
+        @Operation(summary = "Get system wallet transactions (Admin)", description = "Retrieve transaction history of the system wallet with pagination.", security = @SecurityRequirement(name = "Bearer Authentication"))
+        @GetMapping("/system/transactions")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<PaginationResponseDTO<List<com.swd392.dtos.responseDTO.TransactionResponseDTO>>>> getSystemWalletTransactions(
+                        @Parameter(description = "Filter from date (ISO format)") @RequestParam(required = false) LocalDateTime fromDate,
+                        @Parameter(description = "Filter to date (ISO format)") @RequestParam(required = false) LocalDateTime toDate,
+                        @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
+                        @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
+                RequestContext.setCurrentLayer("CONTROLLER");
+                log.info("\n  \u250c\u2500 CONTROLLER \u2500 getSystemWalletTransactions");
+
+                PaginationResponseDTO<List<com.swd392.dtos.responseDTO.TransactionResponseDTO>> result = walletService
+                                .getSystemWalletTransactions(fromDate, toDate, page, size);
+
+                return ResponseEntity.ok(
+                                ApiResponse.<PaginationResponseDTO<List<com.swd392.dtos.responseDTO.TransactionResponseDTO>>>builder()
+                                                .success(true)
+                                                .message("System wallet transactions retrieved successfully")
                                                 .data(result)
                                                 .requestId(RequestContext.getRequestId())
                                                 .timestamp(LocalDateTime.now().toString())
