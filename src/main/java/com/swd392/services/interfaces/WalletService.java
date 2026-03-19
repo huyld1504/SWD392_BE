@@ -53,4 +53,28 @@ public interface WalletService {
     PaginationResponseDTO<List<TransactionResponseDTO>> getWalletTransactions(
             String email, Integer walletId, LocalDateTime fromDate, LocalDateTime toDate, int page,
             int size);
+
+    // ==================== SYSTEM WALLET ====================
+
+    /**
+     * Initialize the SYSTEM wallet if it doesn't exist.
+     * Called during application startup.
+     */
+    void initializeSystemWallet();
+
+    /**
+     * Get the system wallet info (Admin only).
+     */
+    WalletResponseDTO getSystemWallet();
+
+    /**
+     * Top up the system wallet balance (Admin only).
+     */
+    WalletResponseDTO topUpSystemWallet(java.math.BigDecimal amount);
+
+    /**
+     * Get system wallet transactions (Admin only).
+     */
+    PaginationResponseDTO<List<TransactionResponseDTO>> getSystemWalletTransactions(
+            LocalDateTime fromDate, LocalDateTime toDate, int page, int size);
 }

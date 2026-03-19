@@ -12,11 +12,14 @@ public class WalletMapper {
   public WalletResponseDTO toDTO(Wallet wallet) {
     User user = wallet.getUser();
 
-    UserInfoDTO userInfoDTO = new UserInfoDTO(
-        user.getUserId(),
-        user.getFullName(),
-        user.getEmail(),
-        user.getAvatarUrl());
+    UserInfoDTO userInfoDTO = null;
+    if (user != null) {
+      userInfoDTO = new UserInfoDTO(
+          user.getUserId(),
+          user.getFullName(),
+          user.getEmail(),
+          user.getAvatarUrl());
+    }
 
     return new WalletResponseDTO(
         wallet.getWalletId(),

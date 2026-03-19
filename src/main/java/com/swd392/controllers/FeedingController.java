@@ -140,7 +140,7 @@ public class FeedingController {
                                 ApiResponse.<FeedingPeriodResponseDTO>builder()
                                                 .success(true)
                                                 .message("Feeding reset completed. "
-                                                                + result.getTotalStudentsProcessed()
+                                                                + result.getTotalUsersProcessed()
                                                                 + " users processed.")
                                                 .data(result)
                                                 .requestId(RequestContext.getRequestId())
@@ -178,7 +178,7 @@ public class FeedingController {
 
         // ==================== FEEDING DETAIL ====================
 
-        @Operation(summary = "Get feeding period detail (Admin)", description = "Retrieve detailed info including students sorted by earned balance (top donated first).", security = @SecurityRequirement(name = "Bearer Authentication"))
+        @Operation(summary = "Get feeding period detail (Admin)", description = "Retrieve detailed info including all users sorted by earned balance (top donated first), with total coins granted and earned summary.", security = @SecurityRequirement(name = "Bearer Authentication"))
         @ApiResponses({
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Detail retrieved"),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Period not found", content = @Content)

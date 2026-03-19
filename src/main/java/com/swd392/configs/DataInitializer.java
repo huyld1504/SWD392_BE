@@ -51,6 +51,9 @@ public class DataInitializer {
                     User.UserRole.ADMIN
             );
 
+            // ==================== SYSTEM WALLET ====================
+            walletService.initializeSystemWallet();
+
             log.info("✅ Database initialization completed!");
         };
     }

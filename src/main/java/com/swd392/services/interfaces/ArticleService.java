@@ -14,6 +14,8 @@ public interface ArticleService {
 
     ArticleResponseDTO create(ArticleRequestDTO request, List<MultipartFile> diagrams);
 
+    ArticleResponseDTO saveDraft(ArticleRequestDTO request, List<MultipartFile> diagrams);
+
     ArticleResponseDTO getById(Integer id);
 
     PaginationResponseDTO<List<ArticleResponseDTO>> getAll(String keyword, Article.ArticleStatus status,
@@ -23,6 +25,8 @@ public interface ArticleService {
             Integer topicId, Pageable pageable);
 
     ArticleResponseDTO update(Integer id, ArticleUpdateRequestDTO request, List<MultipartFile> newDiagrams);
+
+    ArticleResponseDTO submitArticle(Integer id);
 
     void delete(Integer id);
 

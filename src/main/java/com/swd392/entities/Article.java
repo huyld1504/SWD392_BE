@@ -49,7 +49,7 @@ public class Article {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ArticleStatus status = ArticleStatus.PENDING;
+    private ArticleStatus status = ArticleStatus.DRAFT;
 
     @CreationTimestamp
     @Column(name = "created_at")
@@ -78,6 +78,6 @@ public class Article {
     private List<Donation> donations = new ArrayList<>();
 
     public enum ArticleStatus {
-        PENDING, APPROVED, REJECTED
+        DRAFT, PENDING, APPROVED, REJECTED
     }
 }
