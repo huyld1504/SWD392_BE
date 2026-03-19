@@ -4,7 +4,9 @@ import com.swd392.configs.RequestContext;
 import com.swd392.dtos.common.ApiResponse;
 import com.swd392.dtos.common.PaginationResponseDTO;
 import com.swd392.dtos.requestDTO.ArticleRequestDTO;
+import com.swd392.dtos.requestDTO.ArticleUpdateRequestDTO;
 import com.swd392.dtos.responseDTO.ArticleResponseDTO;
+import com.swd392.entities.Article;
 import com.swd392.services.interfaces.ArticleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,122 +28,206 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ArticleController {
 
-    private final ArticleService articleService;
+        private final ArticleService articleService;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('STUDENT', 'LECTURE')")
-    public ResponseEntity<ApiResponse<ArticleResponseDTO>> create(
-            @Valid @ModelAttribute ArticleRequestDTO request,
-            @RequestPart(value = "diagrams", required = false) List<MultipartFile> diagrams) {
+        @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        @PreAuthorize("hasAnyRole('STUDENT', 'LECTURE')")
+        public ResponseEntity<ApiResponse<ArticleResponseDTO>> create(
+                        @Valid @ModelAttribute ArticleRequestDTO request,
+                        @RequestPart(value = "diagrams", required = false) List<MultipartFile> diagrams) {
 
-        ArticleResponseDTO result = articleService.create(request, diagrams);
+                ArticleResponseDTO result = articleService.create(request, diagrams);
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.<ArticleResponseDTO>builder()
-                        .success(true)
-                        .message("Article created successfully")
-                        .data(result)
-                        .requestId(RequestContext.getRequestId())
-                        .timestamp(LocalDateTime.now().toString())
-                        .build());
-    }
+                return ResponseEntity.status(HttpStatus.CREATED)
+                                .body(ApiResponse.<ArticleResponseDTO>builder()
+                                                .success(true)
+                                                .message("Article created and submitted for review")
+                                                .data(result)
+                                                .requestId(RequestContext.getRequestId())
+                                                .timestamp(LocalDateTime.now().toString())
+                                                .build());
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ArticleResponseDTO>> getById(
-            @PathVariable Integer id) {
+        @PostMapping(value = "/draft", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        @PreAuthorize("hasAnyRole('STUDENT', 'LECTURE')")
+        public ResponseEntity<ApiResponse<ArticleResponseDTO>> saveDraft(
+                        @Valid @ModelAttribute ArticleRequestDTO request,
+                        @RequestPart(value = "diagrams", required = false) List<MultipartFile> diagrams) {
 
-        ArticleResponseDTO result = articleService.getById(id);
+                ArticleResponseDTO result = articleService.saveDraft(request, diagrams);
 
-        return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
-                .success(true)
-                .message("Article retrieved successfully")
-                .data(result)
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
-    }
+                return ResponseEntity.status(HttpStatus.CREATED)
+                                .body(ApiResponse.<ArticleResponseDTO>builder()
+                                                .success(true)
+                                                .message("Article draft saved successfully")
+                                                .data(result)
+                                                .requestId(RequestContext.getRequestId())
+                                                .timestamp(LocalDateTime.now().toString())
+                                                .build());
+        }
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<PaginationResponseDTO<List<ArticleResponseDTO>>>> getAll(
-            @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestParam(value = "sort", defaultValue = "createdAt") String sort,
-            @RequestParam(value = "direction", defaultValue = "desc") String direction) {
+        @GetMapping("/my")
+        @PreAuthorize("hasAnyRole('STUDENT', 'LECTURE')")
+        public ResponseEntity<ApiResponse<PaginationResponseDTO<List<ArticleResponseDTO>>>> getMyArticles(
+                        @RequestParam(value = "keyword", required = false) String keyword,
+                        @RequestParam(value = "status", required = false) Article.ArticleStatus status,
+                        @RequestParam(value = "topicId", required = false) Integer topicId,
+                        @RequestParam(value = "page", defaultValue = "0") int page,
+                        @RequestParam(value = "size", defaultValue = "10") int size,
+                        @RequestParam(value = "sort", defaultValue = "createdAt") String sort,
+                        @RequestParam(value = "direction", defaultValue = "desc") String direction) {
 
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+                Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC
+                                : Sort.Direction.DESC;
+                Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
-        PaginationResponseDTO<List<ArticleResponseDTO>> result = articleService.getAll(keyword, pageable);
+                PaginationResponseDTO<List<ArticleResponseDTO>> result = articleService.getMyArticles(keyword, status,
+                                topicId, pageable);
 
-        return ResponseEntity.ok(ApiResponse.<PaginationResponseDTO<List<ArticleResponseDTO>>>builder()
-                .success(true)
-                .message("Articles retrieved successfully")
-                .data(result)
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
-    }
+                return ResponseEntity.ok(ApiResponse.<PaginationResponseDTO<List<ArticleResponseDTO>>>builder()
+                                .success(true)
+                                .message("My articles retrieved successfully")
+                                .data(result)
+                                .requestId(RequestContext.getRequestId())
+                                .timestamp(LocalDateTime.now().toString())
+                                .build());
+        }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ArticleResponseDTO>> update(
-            @PathVariable Integer id,
-            @Valid @RequestBody ArticleRequestDTO request) {
+        @GetMapping("/{id}")
+        public ResponseEntity<ApiResponse<ArticleResponseDTO>> getById(
+                        @PathVariable Integer id) {
 
-        ArticleResponseDTO result = articleService.update(id, request);
+                ArticleResponseDTO result = articleService.getById(id);
 
-        return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
-                .success(true)
-                .message("Article updated successfully")
-                .data(result)
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
-    }
+                return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
+                                .success(true)
+                                .message("Article retrieved successfully")
+                                .data(result)
+                                .requestId(RequestContext.getRequestId())
+                                .timestamp(LocalDateTime.now().toString())
+                                .build());
+        }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable Integer id) {
+        @GetMapping
+        public ResponseEntity<ApiResponse<PaginationResponseDTO<List<ArticleResponseDTO>>>> getAll(
+                        @RequestParam(value = "keyword", required = false) String keyword,
+                        @RequestParam(value = "status", required = false) Article.ArticleStatus status,
+                        @RequestParam(value = "topicId", required = false) Integer topicId,
+                        @RequestParam(value = "page", defaultValue = "0") int page,
+                        @RequestParam(value = "size", defaultValue = "10") int size,
+                        @RequestParam(value = "sort", defaultValue = "createdAt") String sort,
+                        @RequestParam(value = "direction", defaultValue = "desc") String direction) {
 
-        articleService.delete(id);
+                Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC
+                                : Sort.Direction.DESC;
+                Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .success(true)
-                .message("Article deleted successfully")
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
-    }
+                PaginationResponseDTO<List<ArticleResponseDTO>> result = articleService.getAll(keyword, status,
+                                topicId, pageable);
 
-    @PutMapping("/{id}/approve")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LECTURE')")
-    public ResponseEntity<ApiResponse<ArticleResponseDTO>> approve(
-            @PathVariable Integer id) {
+                return ResponseEntity.ok(ApiResponse.<PaginationResponseDTO<List<ArticleResponseDTO>>>builder()
+                                .success(true)
+                                .message("Articles retrieved successfully")
+                                .data(result)
+                                .requestId(RequestContext.getRequestId())
+                                .timestamp(LocalDateTime.now().toString())
+                                .build());
+        }
 
-        ArticleResponseDTO result = articleService.approve(id);
+        @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        @PreAuthorize("hasAnyRole('STUDENT', 'LECTURE')")
+        public ResponseEntity<ApiResponse<ArticleResponseDTO>> update(
+                        @PathVariable Integer id,
+                        @Valid @ModelAttribute ArticleUpdateRequestDTO request,
+                        @RequestPart(value = "newDiagrams", required = false) List<MultipartFile> newDiagrams) {
 
-        return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
-                .success(true)
-                .message("Article approved successfully")
-                .data(result)
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
-    }
+                ArticleResponseDTO result = articleService.update(id, request, newDiagrams);
 
-    @PutMapping("/{id}/reject")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LECTURE')")
-    public ResponseEntity<ApiResponse<ArticleResponseDTO>> reject(
-            @PathVariable Integer id) {
+                return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
+                                .success(true)
+                                .message("Article updated successfully")
+                                .data(result)
+                                .requestId(RequestContext.getRequestId())
+                                .timestamp(LocalDateTime.now().toString())
+                                .build());
+        }
 
-        ArticleResponseDTO result = articleService.reject(id);
+        @PutMapping("/{id}/submit")
+        @PreAuthorize("hasAnyRole('STUDENT', 'LECTURE')")
+        public ResponseEntity<ApiResponse<ArticleResponseDTO>> submit(
+                        @PathVariable Integer id) {
 
-        return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
-                .success(true)
-                .message("Article rejected successfully")
-                .data(result)
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
-    }
+                ArticleResponseDTO result = articleService.submitArticle(id);
+
+                return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
+                                .success(true)
+                                .message("Article submitted for review successfully")
+                                .data(result)
+                                .requestId(RequestContext.getRequestId())
+                                .timestamp(LocalDateTime.now().toString())
+                                .build());
+        }
+
+        @DeleteMapping("/{id}")
+        @PreAuthorize("hasAnyRole('STUDENT','LECTURE','ADMIN')")
+        public ResponseEntity<ApiResponse<Void>> delete(
+                        @PathVariable Integer id) {
+
+                articleService.delete(id);
+
+                return ResponseEntity.ok(
+                                ApiResponse.<Void>builder()
+                                                .success(true)
+                                                .message("Article deleted successfully")
+                                                .requestId(RequestContext.getRequestId())
+                                                .timestamp(LocalDateTime.now().toString())
+                                                .build());
+        }
+
+        @PutMapping("/{id}/restore")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<Void>> restore(@PathVariable Integer id) {
+
+                articleService.restore(id);
+
+                return ResponseEntity.ok(
+                                ApiResponse.<Void>builder()
+                                                .success(true)
+                                                .message("Article restored successfully")
+                                                .requestId(RequestContext.getRequestId())
+                                                .timestamp(LocalDateTime.now().toString())
+                                                .build());
+        }
+
+        @PutMapping("/{id}/approve")
+        @PreAuthorize("hasAnyRole('ADMIN', 'LECTURE')")
+        public ResponseEntity<ApiResponse<ArticleResponseDTO>> approve(
+                        @PathVariable Integer id) {
+
+                ArticleResponseDTO result = articleService.approve(id);
+
+                return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
+                                .success(true)
+                                .message("Article approved successfully")
+                                .data(result)
+                                .requestId(RequestContext.getRequestId())
+                                .timestamp(LocalDateTime.now().toString())
+                                .build());
+        }
+
+        @PutMapping("/{id}/reject")
+        @PreAuthorize("hasAnyRole('ADMIN', 'LECTURE')")
+        public ResponseEntity<ApiResponse<ArticleResponseDTO>> reject(
+                        @PathVariable Integer id) {
+
+                ArticleResponseDTO result = articleService.reject(id);
+
+                return ResponseEntity.ok(ApiResponse.<ArticleResponseDTO>builder()
+                                .success(true)
+                                .message("Article rejected successfully")
+                                .data(result)
+                                .requestId(RequestContext.getRequestId())
+                                .timestamp(LocalDateTime.now().toString())
+                                .build());
+        }
 }

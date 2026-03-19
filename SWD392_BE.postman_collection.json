@@ -68,8 +68,15 @@
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/auth/login",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "login"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
 						},
 						"description": "Authenticate user with email and password credentials. Returns JWT token and user information."
 					},
@@ -124,8 +131,15 @@
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/auth/register",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "register"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
 						},
 						"description": "Register a new user with email and password credentials. Role can be: STUDENT, LECTURE, ADMIN."
 					},
@@ -151,8 +165,15 @@
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/auth/me",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "me"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"me"
+							]
 						},
 						"description": "Retrieve the authenticated user's profile information. Requires valid JWT token. Roles: STUDENT, LECTURE, ADMIN."
 					},
@@ -181,8 +202,16 @@
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/auth/oauth2/google",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "oauth2", "google"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"oauth2",
+								"google"
+							]
 						},
 						"description": "Redirects to Google for OAuth2 authentication. Users will be redirected to Google login page (HTTP 302)."
 					},
@@ -210,8 +239,15 @@
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/users/change-password",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "users", "change-password"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"change-password"
+							]
 						},
 						"description": "Change the authenticated user's password. Requires valid JWT token."
 					},
@@ -249,8 +285,15 @@
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/users/forgot-password",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "users", "forgot-password"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"forgot-password"
+							]
 						},
 						"description": "Request a password reset email. Sends a reset token to the provided email address."
 					},
@@ -288,8 +331,15 @@
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/users/reset-password",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "users", "reset-password"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"reset-password"
+							]
 						},
 						"description": "Reset password using the token received via email from the forgot-password endpoint."
 					},
@@ -345,13 +395,47 @@
 									"type": "file",
 									"src": [],
 									"description": "Diagram files to upload (optional, multiple allowed)"
+								},
+								{
+									"key": "diagramDetails[0].caption",
+									"value": "Architecture diagram",
+									"type": "text",
+									"description": "Caption for first diagram (optional, index maps to diagrams file)",
+									"disabled": true
+								},
+								{
+									"key": "diagramDetails[0].sortOrder",
+									"value": "1",
+									"type": "text",
+									"description": "Sort order for first diagram (optional, default: auto-increment)",
+									"disabled": true
+								},
+								{
+									"key": "diagramDetails[1].caption",
+									"value": "Flowchart",
+									"type": "text",
+									"description": "Caption for second diagram",
+									"disabled": true
+								},
+								{
+									"key": "diagramDetails[1].sortOrder",
+									"value": "2",
+									"type": "text",
+									"description": "Sort order for second diagram",
+									"disabled": true
 								}
 							]
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/articles",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "articles"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"articles"
+							]
 						},
 						"description": "Create a new article with optional diagram file uploads. Roles: STUDENT, LECTURE. Content-Type: multipart/form-data."
 					},
@@ -371,14 +455,87 @@
 					]
 				},
 				{
+					"name": "Get My Articles",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/articles/my?keyword=&status=&page=0&size=10&sort=createdAt&direction=desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"articles",
+								"my"
+							],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "",
+									"description": "Search keyword in title and content (optional)"
+								},
+								{
+									"key": "status",
+									"value": "",
+									"description": "Filter by status: PENDING, APPROVED, REJECTED (optional)"
+								},
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (default: 0)"
+								},
+								{
+									"key": "size",
+									"value": "10",
+									"description": "Page size (default: 10)"
+								},
+								{
+									"key": "sort",
+									"value": "createdAt",
+									"description": "Sort field (default: createdAt)"
+								},
+								{
+									"key": "direction",
+									"value": "desc",
+									"description": "Sort direction: asc or desc (default: desc)"
+								}
+							]
+						},
+						"description": "Retrieve all articles created by the current authenticated user. Supports keyword search, status filter (PENDING, APPROVED, REJECTED), sorting, and pagination. Roles: STUDENT, LECTURE."
+					},
+					"response": [
+						{
+							"name": "Get My Articles Success",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": true,\n    \"message\": \"My articles retrieved successfully\",\n    \"data\": {\n        \"totalItems\": 2,\n        \"totalPages\": 1,\n        \"currentPage\": 0,\n        \"pageSize\": 10,\n        \"data\": [\n            {\n                \"articleId\": 1,\n                \"title\": \"My First Article\",\n                \"contentBody\": \"Content...\",\n                \"status\": \"APPROVED\",\n                \"topicId\": 1,\n                \"topicName\": \"Topic Name\",\n                \"author\": {\n                    \"userId\": 1,\n                    \"name\": \"John Doe\",\n                    \"email\": \"user@example.com\",\n                    \"avatarUrl\": null\n                },\n                \"diagrams\": [],\n                \"createdAt\": \"2026-03-10T10:30:00\"\n            },\n            {\n                \"articleId\": 3,\n                \"title\": \"My Pending Article\",\n                \"contentBody\": \"Draft...\",\n                \"status\": \"PENDING\",\n                \"topicId\": 2,\n                \"topicName\": \"Another Topic\",\n                \"author\": {\n                    \"userId\": 1,\n                    \"name\": \"John Doe\",\n                    \"email\": \"user@example.com\",\n                    \"avatarUrl\": null\n                },\n                \"diagrams\": [],\n                \"createdAt\": \"2026-03-09T08:00:00\"\n            }\n        ]\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-03-10T13:30:00\"\n}"
+						}
+					]
+				},
+				{
 					"name": "Get Article By ID",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/articles/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "articles", ":id"],
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"articles",
+								":id"
+							],
 							"variable": [
 								{
 									"key": "id",
@@ -411,8 +568,14 @@
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/articles?keyword=&page=0&size=10&sort=createdAt&direction=desc",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "articles"],
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"articles"
+							],
 							"query": [
 								{
 									"key": "keyword",
@@ -441,7 +604,7 @@
 								}
 							]
 						},
-						"description": "Retrieve all articles with pagination and search. Supports keyword search, sorting, and pagination."
+						"description": "Retrieve all articles with pagination and search. Student users can only see APPROVED articles. Admin/Lecture can filter by status (PENDING, APPROVED, REJECTED). Supports keyword search in title and content, sorting, and pagination."
 					},
 					"response": [
 						{
@@ -462,20 +625,93 @@
 					"name": "Update Article",
 					"request": {
 						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [],
 						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"topicId\": 1,\n    \"title\": \"Updated Article Title\",\n    \"contentBody\": \"Updated content body of the article.\"\n}"
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "title",
+									"value": "Updated Article Title",
+									"type": "text",
+									"description": "Title of the article (required)"
+								},
+								{
+									"key": "contentBody",
+									"value": "Updated content body of the article.",
+									"type": "text",
+									"description": "Content body of the article"
+								},
+								{
+									"key": "existingDiagrams[0].diagramId",
+									"value": "1",
+									"type": "text",
+									"description": "ID of existing diagram to update (required for each entry)"
+								},
+								{
+									"key": "existingDiagrams[0].caption",
+									"value": "Updated diagram caption",
+									"type": "text",
+									"description": "New caption for this diagram (optional)"
+								},
+								{
+									"key": "existingDiagrams[0].sortOrder",
+									"value": "2",
+									"type": "text",
+									"description": "New sort order for this diagram (optional)"
+								},
+								{
+									"key": "existingDiagrams[1].diagramId",
+									"value": "2",
+									"type": "text",
+									"description": "ID of second existing diagram to update",
+									"disabled": true
+								},
+								{
+									"key": "existingDiagrams[1].caption",
+									"value": "Another caption",
+									"type": "text",
+									"description": "Caption for second diagram",
+									"disabled": true
+								},
+								{
+									"key": "existingDiagrams[1].sortOrder",
+									"value": "1",
+									"type": "text",
+									"description": "Sort order for second diagram",
+									"disabled": true
+								},
+								{
+									"key": "deleteDiagramIds[0]",
+									"value": "3",
+									"type": "text",
+									"description": "ID of diagram to delete (will also delete from Cloudinary)"
+								},
+								{
+									"key": "deleteDiagramIds[1]",
+									"value": "4",
+									"type": "text",
+									"description": "ID of second diagram to delete",
+									"disabled": true
+								},
+								{
+									"key": "newDiagrams",
+									"type": "file",
+									"src": [],
+									"description": "New diagram image files to upload (optional, multiple allowed)"
+								}
+							]
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/articles/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "articles", ":id"],
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"articles",
+								":id"
+							],
 							"variable": [
 								{
 									"key": "id",
@@ -484,7 +720,7 @@
 								}
 							]
 						},
-						"description": "Update an existing article by its ID."
+						"description": "Update an existing article by its ID. Supports:\n- Update title and content body\n- Update caption and sort order of existing diagrams (existingDiagrams)\n- Delete existing diagrams from Cloudinary and DB (deleteDiagramIds)\n- Upload new diagram images (newDiagrams)\n\nContent-Type: multipart/form-data. Roles: STUDENT, LECTURE.\n\nNote: If the article status is REJECTED, updating will automatically change it back to PENDING."
 					},
 					"response": [
 						{
@@ -497,7 +733,31 @@
 									"value": "application/json"
 								}
 							],
-							"body": "{\n    \"success\": true,\n    \"message\": \"Article updated successfully\",\n    \"data\": {\n        \"articleId\": 1,\n        \"title\": \"Updated Article Title\",\n        \"contentBody\": \"Updated content body of the article.\",\n        \"status\": \"PENDING\",\n        \"topicId\": 1,\n        \"topicName\": \"Topic Name\",\n        \"author\": {\n            \"userId\": 1,\n            \"name\": \"John Doe\",\n            \"email\": \"user@example.com\",\n            \"avatarUrl\": null\n        },\n        \"approvedBy\": null,\n        \"diagrams\": [],\n        \"createdAt\": \"2026-02-27T10:30:00\",\n        \"approvedAt\": null\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-02-27T10:30:00\"\n}"
+							"body": "{\n    \"success\": true,\n    \"message\": \"Article updated successfully\",\n    \"data\": {\n        \"articleId\": 1,\n        \"title\": \"Updated Article Title\",\n        \"contentBody\": \"Updated content body of the article.\",\n        \"status\": \"PENDING\",\n        \"topicId\": 1,\n        \"topicName\": \"Topic Name\",\n        \"author\": {\n            \"userId\": 1,\n            \"name\": \"John Doe\",\n            \"email\": \"user@example.com\",\n            \"avatarUrl\": null\n        },\n        \"approvedBy\": null,\n        \"diagrams\": [\n            {\n                \"diagramId\": 1,\n                \"imageUrl\": \"https://res.cloudinary.com/xxx/image/upload/v1/article_diagrams/diagram1.png\",\n                \"caption\": \"Updated diagram caption\",\n                \"sortOrder\": 2\n            },\n            {\n                \"diagramId\": 5,\n                \"imageUrl\": \"https://res.cloudinary.com/xxx/image/upload/v1/article_diagrams/new_upload.png\",\n                \"caption\": null,\n                \"sortOrder\": 1\n            }\n        ],\n        \"createdAt\": \"2026-02-27T10:30:00\",\n        \"approvedAt\": null\n    },\n    \"requestId\": \"abc-123\",\n    \"timestamp\": \"2026-03-10T12:30:00\"\n}"
+						},
+						{
+							"name": "Diagram Not Found",
+							"status": "Not Found",
+							"code": 404,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": false,\n    \"message\": \"Diagram not found with id: 999\"\n}"
+						},
+						{
+							"name": "Diagram Not Belong To Article",
+							"status": "Bad Request",
+							"code": 400,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"success\": false,\n    \"message\": \"Diagram id 5 does not belong to this article\"\n}"
 						}
 					]
 				},
@@ -508,8 +768,15 @@
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/articles/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "articles", ":id"],
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"articles",
+								":id"
+							],
 							"variable": [
 								{
 									"key": "id",
@@ -542,8 +809,16 @@
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/articles/:id/approve",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "articles", ":id", "approve"],
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"articles",
+								":id",
+								"approve"
+							],
 							"variable": [
 								{
 									"key": "id",
@@ -576,8 +851,16 @@
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/articles/:id/reject",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "articles", ":id", "reject"],
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"articles",
+								":id",
+								"reject"
+							],
 							"variable": [
 								{
 									"key": "id",
@@ -625,8 +908,14 @@
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/subjects",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "subjects"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"subjects"
+							]
 						},
 						"description": "Create a new subject. Role: ADMIN only. Subject code must be unique."
 					},
@@ -679,8 +968,14 @@
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/topics",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "topics"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"topics"
+							]
 						},
 						"description": "Create a new topic under a subject. Role: ADMIN only. Subject must exist."
 					},
@@ -727,8 +1022,13 @@
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/hello/",
-							"host": ["{{baseUrl}}"],
-							"path": ["hello", ""]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"hello",
+								""
+							]
 						},
 						"description": "A simple test endpoint that returns a greeting message. No authentication required."
 					},

@@ -12,28 +12,33 @@ import java.util.List;
 @Component
 public class SubjectMapper {
 
-  public SubjectResponseDTO toDTO(Subject subject) {
+  public SubjectResponseDTO toDTO(Subject subject, boolean includeTopics) {
 
-    List<TopicResponseDTO> topics = subject.getTopics() != null
-        ? subject.getTopics().stream()
-            .map(this::toTopicDTO)
-            .toList()
-        : Collections.emptyList();
+    List<TopicResponseDTO> topics = Collections.emptyList();
+
+    if (includeTopics && subject.getTopics() != null) {
+      topics = subject.getTopics()
+              .stream()
+              .map(this::toTopicDTO)
+              .toList();
+    }
 
     return new SubjectResponseDTO(
-        subject.getSubjectId(),
-        subject.getSubjectCode(),
-        subject.getName(),
-        subject.getDescription(),
-        topics);
+            subject.getSubjectId(),
+            subject.getSubjectCode(),
+            subject.getName(),
+            subject.getDescription(),
+            topics
+    );
   }
 
   public TopicResponseDTO toTopicDTO(Topic topic) {
     return new TopicResponseDTO(
-        topic.getTopicId(),
-        topic.getSubject().getSubjectId(),
-        topic.getSubject().getName(),
-        topic.getName(),
-        topic.getDescription());
+            topic.getTopicId(),
+            topic.getSubject().getSubjectId(),
+            topic.getSubject().getName(),
+            topic.getName(),
+            topic.getDescription()
+    );
   }
 }

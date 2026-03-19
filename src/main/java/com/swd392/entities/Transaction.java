@@ -57,7 +57,6 @@ public class Transaction {
     }
 
     public enum TransactionType {
-        FEEDING, DONATE, REWARD, RESET
+        FEEDING, DONATE, RECEIVE_DONATE, REWARD, RESET, TOPUP
     }
 }
-
