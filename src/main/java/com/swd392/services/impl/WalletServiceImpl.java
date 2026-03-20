@@ -4,6 +4,7 @@ import com.swd392.configs.RequestContext;
 import com.swd392.dtos.common.PaginationResponseDTO;
 import com.swd392.dtos.requestDTO.UpdateWalletStatusRequestDTO;
 import com.swd392.dtos.responseDTO.TransactionResponseDTO;
+import com.swd392.dtos.responseDTO.UserInfoDTO;
 import com.swd392.dtos.responseDTO.WalletResponseDTO;
 import com.swd392.entities.Transaction;
 import com.swd392.entities.User;
@@ -222,7 +223,7 @@ public class WalletServiceImpl implements WalletService {
     }
 
     Specification<Transaction> spec = Specification
-        .where(TransactionSpecification.hasWalletId(walletId))
+        .where(TransactionSpecification.belongsToWallet(walletId))
         .and(TransactionSpecification.createdAfter(fromDate))
         .and(TransactionSpecification.createdBefore(toDate));
 
@@ -246,18 +247,53 @@ public class WalletServiceImpl implements WalletService {
   }
 
   private TransactionResponseDTO mapTransactionToDTO(Transaction transaction, Integer currentWalletId) {
-    boolean isSender = transaction.getSenderWallet() != null
-        && transaction.getSenderWallet().getWalletId().equals(currentWalletId);
 
-    String direction = isSender ? "OUT" : "IN";
+    // ===== DETERMINE DIRECTION based on transactionType + currentWalletId =====
+    // Some transaction types inherently represent one direction:
+    //   DONATE, FEEDING, RESET → always OUT from the sender's perspective
+    //   RECEIVE_DONATE, REWARD, TOPUP → always IN to the receiver's perspective
+    String direction;
+    switch (transaction.getTransactionType()) {
+      case DONATE:
+      case FEEDING:
+      case RESET:
+        // These types record money leaving the sender's wallet
+        direction = "OUT";
+        break;
+      case RECEIVE_DONATE:
+      case REWARD:
+      case TOPUP:
+        // These types record money entering the receiver's wallet
+        direction = "IN";
+        break;
+      default:
+        // Fallback: determine by wallet position
+        boolean isSender = transaction.getSenderWallet() != null
+            && transaction.getSenderWallet().getWalletId().equals(currentWalletId);
+        direction = isSender ? "OUT" : "IN";
+        break;
+    }
 
-    User counterparty;
-    if (isSender && transaction.getReceiverWallet() != null) {
-      counterparty = transaction.getReceiverWallet().getUser();
-    } else if (!isSender && transaction.getSenderWallet() != null) {
-      counterparty = transaction.getSenderWallet().getUser();
-    } else {
-      counterparty = null;
+    // ===== BUILD SENDER UserInfoDTO =====
+    UserInfoDTO senderInfo = null;
+    if (transaction.getSenderWallet() != null && transaction.getSenderWallet().getUser() != null) {
+      User senderUser = transaction.getSenderWallet().getUser();
+      senderInfo = new UserInfoDTO(
+          senderUser.getUserId(),
+          senderUser.getFullName(),
+          senderUser.getEmail(),
+          senderUser.getAvatarUrl());
+    }
+
+    // ===== BUILD RECEIVER UserInfoDTO =====
+    UserInfoDTO receiverInfo = null;
+    if (transaction.getReceiverWallet() != null && transaction.getReceiverWallet().getUser() != null) {
+      User receiverUser = transaction.getReceiverWallet().getUser();
+      receiverInfo = new UserInfoDTO(
+          receiverUser.getUserId(),
+          receiverUser.getFullName(),
+          receiverUser.getEmail(),
+          receiverUser.getAvatarUrl());
     }
 
     return new TransactionResponseDTO(
@@ -266,8 +302,8 @@ public class WalletServiceImpl implements WalletService {
         direction,
         transaction.getAmount(),
         transaction.getCurrency().name(),
-        counterparty != null ? counterparty.getFullName() : "System",
-        counterparty != null ? counterparty.getEmail() : null,
+        senderInfo,
+        receiverInfo,
         transaction.getCreatedAt());
   }
 
@@ -338,7 +374,7 @@ public class WalletServiceImpl implements WalletService {
         .orElseThrow(() -> new AppException("System wallet not found", HttpStatus.NOT_FOUND));
 
     Specification<Transaction> spec = Specification
-        .where(TransactionSpecification.hasWalletId(systemWallet.getWalletId()))
+        .where(TransactionSpecification.belongsToWallet(systemWallet.getWalletId()))
         .and(TransactionSpecification.createdAfter(fromDate))
         .and(TransactionSpecification.createdBefore(toDate));
 

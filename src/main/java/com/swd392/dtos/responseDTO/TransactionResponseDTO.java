@@ -9,7 +9,7 @@ public record TransactionResponseDTO(
         String direction,
         BigDecimal amount,
         String currency,
-        String counterpartyName,
-        String counterpartyEmail,
+        UserInfoDTO sender,
+        UserInfoDTO receiver,
         LocalDateTime createdAt) {
 }
