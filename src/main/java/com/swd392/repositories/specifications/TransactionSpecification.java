@@ -42,7 +42,8 @@ public class TransactionSpecification {
           root.get("transactionType").in(
               Transaction.TransactionType.RECEIVE_DONATE,
               Transaction.TransactionType.REWARD,
-              Transaction.TransactionType.TOPUP
+              Transaction.TransactionType.TOPUP,
+              Transaction.TransactionType.FEEDING    // User cũng thấy FEEDING (nhận coin)
           )
       );
 
@@ -70,5 +71,13 @@ public class TransactionSpecification {
   public static Specification<Transaction> createdBefore(LocalDateTime toDate) {
     return (root, query, cb) -> toDate == null ? null
         : cb.lessThanOrEqualTo(root.get("createdAt"), toDate);
+  }
+
+  /**
+   * Filter transactions by semester code (e.g., "SP26").
+   */
+  public static Specification<Transaction> hasSemesterCode(String semesterCode) {
+    return (root, query, cb) -> semesterCode == null || semesterCode.isBlank() ? null
+        : cb.equal(root.get("semester").get("semesterCode"), semesterCode.toUpperCase());
   }
 }

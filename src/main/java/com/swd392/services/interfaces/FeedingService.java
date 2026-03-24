@@ -1,48 +1,54 @@
 package com.swd392.services.interfaces;
 
 import com.swd392.dtos.common.PaginationResponseDTO;
+import com.swd392.dtos.requestDTO.CreateFeedingRequestDTO;
+import com.swd392.dtos.requestDTO.UpdateFeedingRequestDTO;
 import com.swd392.dtos.responseDTO.FeedingPeriodResponseDTO;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public interface FeedingService {
 
-  /**
-   * Admin creates a PENDING feeding period scheduled for a future date.
-   */
-  FeedingPeriodResponseDTO scheduleFeedingReset(LocalDateTime scheduledAt, String adminEmail);
+    /**
+     * Admin creates a feeding period for a semester.
+     */
+    FeedingPeriodResponseDTO createFeedingPeriod(CreateFeedingRequestDTO request, String adminEmail);
 
-  /**
-   * Admin updates the scheduledAt of a PENDING feeding period.
-   */
-  FeedingPeriodResponseDTO updateFeedingSchedule(Integer periodId, LocalDateTime newScheduledAt);
+    /**
+     * Admin updates an active feeding period (e.g., grantAmount).
+     */
+    FeedingPeriodResponseDTO updateFeedingPeriod(Integer periodId, UpdateFeedingRequestDTO request);
 
-  /**
-   * Admin deletes a PENDING feeding period.
-   */
-  void deleteFeedingPeriod(Integer periodId);
+    /**
+     * Admin completes a feeding period before it naturally ends.
+     */
+    FeedingPeriodResponseDTO completeFeedingPeriod(Integer periodId);
 
-  /**
-   * Execute feeding reset immediately.
-   */
-  FeedingPeriodResponseDTO executeFeedingReset(String triggerSource, String adminEmail);
+    /**
+     * Admin cancels a feeding period (only if no users have been fed yet).
+     */
+    void cancelFeedingPeriod(Integer periodId);
 
-  /**
-   * Execute a specific PENDING feeding period (used by daily scheduler).
-   */
-  FeedingPeriodResponseDTO executePendingPeriod(Integer periodId);
+    /**
+     * Admin triggers feeding manually for a specific period.
+     * Feeds all unfed active users immediately.
+     */
+    FeedingPeriodResponseDTO triggerFeeding(Integer periodId);
 
-  /**
-   * Get all feeding periods (paginated, filterable by date range, status,
-   * triggerSource).
-   */
-  PaginationResponseDTO<List<FeedingPeriodResponseDTO>> getAllFeedingPeriods(
-      int page, int size, LocalDateTime fromDate, LocalDateTime toDate, String status, String triggerSource);
+    /**
+     * Daily scheduler: execute feeding for all active periods.
+     * Returns the number of users fed across all periods.
+     */
+    int executeDailyFeeding();
 
-  /**
-   * Get feeding period detail with list of students sorted by
-   * snapshotEarnedBalance DESC.
-   */
-  FeedingPeriodResponseDTO getFeedingDetail(Integer periodId);
+    /**
+     * Get all feeding periods (paginated, with filters).
+     */
+    PaginationResponseDTO<List<FeedingPeriodResponseDTO>> getAllFeedingPeriods(
+        int page, int size, String status, String semesterCode);
+
+    /**
+     * Get detailed feeding period info (with stats and user list).
+     */
+    FeedingPeriodResponseDTO getFeedingDetail(Integer periodId);
 }

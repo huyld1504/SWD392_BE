@@ -196,16 +196,17 @@ public class WalletController {
                         @Parameter(description = "ID of the wallet", required = true, example = "1") @PathVariable Integer walletId,
                         @Parameter(description = "Filter from date (ISO format: yyyy-MM-ddTHH:mm:ss)", example = "2026-01-01T00:00:00") @RequestParam(required = false) LocalDateTime fromDate,
                         @Parameter(description = "Filter to date (ISO format: yyyy-MM-ddTHH:mm:ss)", example = "2026-12-31T23:59:59") @RequestParam(required = false) LocalDateTime toDate,
+                        @Parameter(description = "Filter by semester code (e.g., SP26, SU26, FA26)") @RequestParam(required = false) String semesterCode,
                         @Parameter(description = "Page number (0-indexed)", example = "0") @RequestParam(defaultValue = "0") int page,
                         @Parameter(description = "Page size", example = "10") @RequestParam(defaultValue = "10") int size) {
 
                 RequestContext.setCurrentLayer("CONTROLLER");
                 String email = authentication.getName();
-                log.info("\n  \u250c\u2500 CONTROLLER \u2500 getWalletTransactions\n  \u2502 User     : {}\n  \u2502 Wallet   : {}\n  \u2502 FromDate : {}\n  \u2502 ToDate   : {}",
-                                email, walletId, fromDate, toDate);
+                log.info("\n  ┌─ CONTROLLER ─ getWalletTransactions\n  │ User     : {}\n  │ Wallet   : {}\n  │ Semester : {}\n  │ FromDate : {}\n  │ ToDate   : {}",
+                                email, walletId, semesterCode, fromDate, toDate);
 
                 PaginationResponseDTO<List<com.swd392.dtos.responseDTO.TransactionResponseDTO>> result = walletService
-                                .getWalletTransactions(email, walletId, fromDate, toDate, page, size);
+                                .getWalletTransactions(email, walletId, fromDate, toDate, semesterCode, page, size);
 
                 log.info("\n  \u2514\u2500 CONTROLLER \u2500 getWalletTransactions\n    Status : SUCCESS\n    Total  : {}",
                                 result.getTotalItems());
@@ -285,13 +286,14 @@ public class WalletController {
         public ResponseEntity<ApiResponse<PaginationResponseDTO<List<com.swd392.dtos.responseDTO.TransactionResponseDTO>>>> getSystemWalletTransactions(
                         @Parameter(description = "Filter from date (ISO format)") @RequestParam(required = false) LocalDateTime fromDate,
                         @Parameter(description = "Filter to date (ISO format)") @RequestParam(required = false) LocalDateTime toDate,
+                        @Parameter(description = "Filter by semester code (e.g., SP26, SU26, FA26)") @RequestParam(required = false) String semesterCode,
                         @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
                         @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
                 RequestContext.setCurrentLayer("CONTROLLER");
-                log.info("\n  \u250c\u2500 CONTROLLER \u2500 getSystemWalletTransactions");
+                log.info("\n  ┌─ CONTROLLER ─ getSystemWalletTransactions\n  │ Semester : {}", semesterCode);
 
                 PaginationResponseDTO<List<com.swd392.dtos.responseDTO.TransactionResponseDTO>> result = walletService
-                                .getSystemWalletTransactions(fromDate, toDate, page, size);
+                                .getSystemWalletTransactions(fromDate, toDate, semesterCode, page, size);
 
                 return ResponseEntity.ok(
                                 ApiResponse.<PaginationResponseDTO<List<com.swd392.dtos.responseDTO.TransactionResponseDTO>>>builder()
