@@ -42,6 +42,11 @@ public class Transaction {
     @Column(name = "transaction_type", nullable = false)
     private TransactionType transactionType;
 
+    // Track which semester this transaction belongs to
+    @ManyToOne
+    @JoinColumn(name = "semester_id")
+    private Semester semester;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;

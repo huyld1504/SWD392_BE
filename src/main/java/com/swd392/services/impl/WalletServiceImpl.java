@@ -58,7 +58,7 @@ public class WalletServiceImpl implements WalletService {
     wallet.setUser(user);
     wallet.setWalletType(Wallet.WalletType.MAIN);
     wallet.setCurrency(Wallet.Currency.BLUE);
-    wallet.setBalance(new BigDecimal("100"));
+    wallet.setBalance(BigDecimal.ZERO);
     wallet.setStatus(Wallet.WalletStatus.ACTIVE);
 
     walletRepository.save(wallet);
@@ -83,7 +83,7 @@ public class WalletServiceImpl implements WalletService {
     wallet.setUser(user);
     wallet.setWalletType(Wallet.WalletType.EARNED);
     wallet.setCurrency(Wallet.Currency.GOLD);
-    wallet.setBalance(new BigDecimal(100));
+    wallet.setBalance(BigDecimal.ZERO);
     wallet.setStatus(Wallet.WalletStatus.ACTIVE);
 
     Wallet saved = walletRepository.save(wallet);
@@ -203,12 +203,13 @@ public class WalletServiceImpl implements WalletService {
   @Override
   @Transactional(readOnly = true)
   public PaginationResponseDTO<List<TransactionResponseDTO>> getWalletTransactions(
-      String email, Integer walletId, LocalDateTime fromDate, LocalDateTime toDate, int page, int size) {
+      String email, Integer walletId, LocalDateTime fromDate, LocalDateTime toDate,
+      String semesterCode, int page, int size) {
 
     RequestContext.setCurrentLayer("SERVICE");
     log.info(
-        "\n    \u251c\u2500 SERVICE \u2500 getWalletTransactions\n    \u2502 User     : {}\n    \u2502 Wallet   : {}\n    \u2502 FromDate : {}\n    \u2502 ToDate   : {}",
-        email, walletId, fromDate, toDate);
+        "\n    ├─ SERVICE ─ getWalletTransactions\n    │ User     : {}\n    │ Wallet   : {}\n    │ Semester : {}\n    │ FromDate : {}\n    │ ToDate   : {}",
+        email, walletId, semesterCode, fromDate, toDate);
 
     Wallet wallet = walletRepository.findById(walletId)
         .orElseThrow(() -> new AppException("Wallet not found", HttpStatus.NOT_FOUND));
@@ -225,7 +226,8 @@ public class WalletServiceImpl implements WalletService {
     Specification<Transaction> spec = Specification
         .where(TransactionSpecification.belongsToWallet(walletId))
         .and(TransactionSpecification.createdAfter(fromDate))
-        .and(TransactionSpecification.createdBefore(toDate));
+        .and(TransactionSpecification.createdBefore(toDate))
+        .and(TransactionSpecification.hasSemesterCode(semesterCode));
 
     Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
     Page<Transaction> txPage = transactionRepository.findAll(spec, pageable);
@@ -249,22 +251,26 @@ public class WalletServiceImpl implements WalletService {
   private TransactionResponseDTO mapTransactionToDTO(Transaction transaction, Integer currentWalletId) {
 
     // ===== DETERMINE DIRECTION based on transactionType + currentWalletId =====
-    // Some transaction types inherently represent one direction:
-    //   DONATE, FEEDING, RESET → always OUT from the sender's perspective
-    //   RECEIVE_DONATE, REWARD, TOPUP → always IN to the receiver's perspective
     String direction;
     switch (transaction.getTransactionType()) {
       case DONATE:
-      case FEEDING:
       case RESET:
-        // These types record money leaving the sender's wallet
+        // These types always record money leaving the sender's wallet
         direction = "OUT";
         break;
       case RECEIVE_DONATE:
       case REWARD:
       case TOPUP:
-        // These types record money entering the receiver's wallet
+        // These types always record money entering the receiver's wallet
         direction = "IN";
+        break;
+      case FEEDING:
+        // FEEDING has 2 perspectives:
+        //   System wallet (sender) sees it as OUT
+        //   User wallet (receiver) sees it as IN
+        boolean isFeedingSender = transaction.getSenderWallet() != null
+            && transaction.getSenderWallet().getWalletId().equals(currentWalletId);
+        direction = isFeedingSender ? "OUT" : "IN";
         break;
       default:
         // Fallback: determine by wallet position
@@ -368,7 +374,7 @@ public class WalletServiceImpl implements WalletService {
   @Override
   @Transactional(readOnly = true)
   public PaginationResponseDTO<List<TransactionResponseDTO>> getSystemWalletTransactions(
-      LocalDateTime fromDate, LocalDateTime toDate, int page, int size) {
+      LocalDateTime fromDate, LocalDateTime toDate, String semesterCode, int page, int size) {
 
     Wallet systemWallet = walletRepository.findByWalletType(Wallet.WalletType.SYSTEM)
         .orElseThrow(() -> new AppException("System wallet not found", HttpStatus.NOT_FOUND));
@@ -376,7 +382,8 @@ public class WalletServiceImpl implements WalletService {
     Specification<Transaction> spec = Specification
         .where(TransactionSpecification.belongsToWallet(systemWallet.getWalletId()))
         .and(TransactionSpecification.createdAfter(fromDate))
-        .and(TransactionSpecification.createdBefore(toDate));
+        .and(TransactionSpecification.createdBefore(toDate))
+        .and(TransactionSpecification.hasSemesterCode(semesterCode));
 
     Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
     Page<Transaction> txPage = transactionRepository.findAll(spec, pageable);

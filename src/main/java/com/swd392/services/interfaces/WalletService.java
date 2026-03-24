@@ -51,8 +51,8 @@ public interface WalletService {
      * Only the wallet owner can view their own transactions.
      */
     PaginationResponseDTO<List<TransactionResponseDTO>> getWalletTransactions(
-            String email, Integer walletId, LocalDateTime fromDate, LocalDateTime toDate, int page,
-            int size);
+            String email, Integer walletId, LocalDateTime fromDate, LocalDateTime toDate,
+            String semesterCode, int page, int size);
 
     // ==================== SYSTEM WALLET ====================
 
@@ -76,5 +76,5 @@ public interface WalletService {
      * Get system wallet transactions (Admin only).
      */
     PaginationResponseDTO<List<TransactionResponseDTO>> getSystemWalletTransactions(
-            LocalDateTime fromDate, LocalDateTime toDate, int page, int size);
+            LocalDateTime fromDate, LocalDateTime toDate, String semesterCode, int page, int size);
 }
