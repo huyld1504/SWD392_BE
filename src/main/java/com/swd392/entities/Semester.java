@@ -48,14 +48,22 @@ public class Semester {
         COMPLETED
     }
 
-    // ===== Helper: Parse semester code → auto-calculate fields =====
+    // ===== Helper: Parse semester code → auto-calculate name and set dates =====
 
     /**
-     * Parse semesterCode (e.g., "SP26") and auto-fill semesterName, startDate, endDate.
+     * Parse semesterCode (e.g., "SP26") to auto-fill semesterName, but use provided startDate and endDate.
      */
-    public static Semester fromCode(String code) {
+    public static Semester fromCodeAndDates(String code, LocalDate startDate, LocalDate endDate) {
         if (code == null || code.length() != 4) {
             throw new IllegalArgumentException("Invalid semester code format. Expected: SP26, SU26, FA26");
+        }
+
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start date and end date are required");
+        }
+
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date must be before end date");
         }
 
         String season = code.substring(0, 2).toUpperCase();
@@ -64,23 +72,13 @@ public class Semester {
 
         Semester semester = new Semester();
         semester.setSemesterCode(code.toUpperCase());
+        semester.setStartDate(startDate);
+        semester.setEndDate(endDate);
 
         switch (season) {
-            case "SP" -> {
-                semester.setSemesterName("Spring " + year);
-                semester.setStartDate(LocalDate.of(year, 1, 1));
-                semester.setEndDate(LocalDate.of(year, 4, 30));
-            }
-            case "SU" -> {
-                semester.setSemesterName("Summer " + year);
-                semester.setStartDate(LocalDate.of(year, 5, 1));
-                semester.setEndDate(LocalDate.of(year, 8, 31));
-            }
-            case "FA" -> {
-                semester.setSemesterName("Fall " + year);
-                semester.setStartDate(LocalDate.of(year, 9, 1));
-                semester.setEndDate(LocalDate.of(year, 12, 31));
-            }
+            case "SP" -> semester.setSemesterName("Spring " + year);
+            case "SU" -> semester.setSemesterName("Summer " + year);
+            case "FA" -> semester.setSemesterName("Fall " + year);
             default -> throw new IllegalArgumentException(
                 "Invalid season prefix: " + season + ". Must be SP, SU, or FA");
         }

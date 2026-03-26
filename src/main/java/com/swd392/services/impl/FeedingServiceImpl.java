@@ -54,8 +54,21 @@ public class FeedingServiceImpl implements FeedingService {
         User admin = userRepository.findByEmail(adminEmail)
             .orElseThrow(() -> new AppException("Admin not found", HttpStatus.NOT_FOUND));
 
-        // Parse semester code → auto-calculate dates
-        Semester semester = getOrCreateSemester(request.getSemesterCode());
+        // Semester must already exist (created via CRUD API)
+        Semester semester = semesterRepository.findBySemesterCode(request.getSemesterCode().toUpperCase())
+            .orElseThrow(() -> new AppException(
+                "Semester not found: " + request.getSemesterCode()
+                    + ". Please create the semester first via POST /api/v1/semesters",
+                HttpStatus.NOT_FOUND));
+
+        // Cannot create feeding for a past semester (endDate < today)
+        LocalDate today = LocalDate.now();
+        if (today.isAfter(semester.getEndDate())) {
+            throw new AppException(
+                "Cannot create feeding for past semester " + semester.getSemesterCode()
+                    + " (ended " + semester.getEndDate() + ")",
+                HttpStatus.BAD_REQUEST);
+        }
 
         // Check if feeding period already exists for this semester
         if (feedingPeriodRepository.existsBySemesterSemesterId(semester.getSemesterId())) {
@@ -172,6 +185,24 @@ public class FeedingServiceImpl implements FeedingService {
 
         if (period.getStatus() != FeedingPeriod.PeriodStatus.ACTIVE) {
             throw new AppException("Can only trigger ACTIVE periods. Current: " + period.getStatus(),
+                HttpStatus.BAD_REQUEST);
+        }
+
+        // Check if semester has started
+        Semester semester = period.getSemester();
+        LocalDate today = LocalDate.now();
+
+        if (today.isBefore(semester.getStartDate())) {
+            throw new AppException(
+                "Cannot trigger feeding: semester " + semester.getSemesterCode()
+                    + " has not started yet (starts " + semester.getStartDate() + ")",
+                HttpStatus.BAD_REQUEST);
+        }
+
+        if (today.isAfter(semester.getEndDate())) {
+            throw new AppException(
+                "Cannot trigger feeding: semester " + semester.getSemesterCode()
+                    + " has already ended (" + semester.getEndDate() + ")",
                 HttpStatus.BAD_REQUEST);
         }
 
@@ -379,17 +410,6 @@ public class FeedingServiceImpl implements FeedingService {
     }
 
     // ==================== HELPERS ====================
-
-    private Semester getOrCreateSemester(String semesterCode) {
-        return semesterRepository.findBySemesterCode(semesterCode.toUpperCase())
-            .orElseGet(() -> {
-                Semester newSemester = Semester.fromCode(semesterCode);
-                semesterRepository.save(newSemester);
-                log.info("\n    │ Created semester: {} ({} → {})",
-                    newSemester.getSemesterCode(), newSemester.getStartDate(), newSemester.getEndDate());
-                return newSemester;
-            });
-    }
 
     /**
      * Map for list view (no users detail, no dashboard stats).

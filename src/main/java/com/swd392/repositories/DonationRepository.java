@@ -35,4 +35,18 @@ public interface DonationRepository extends JpaRepository<Donation, Integer>, Jp
   List<Object[]> findTopDonationReceiversByDateRange(
       @Param("fromDate") LocalDateTime fromDate,
       @Param("toDate") LocalDateTime toDate);
+
+  /**
+   * Top donation receivers by semester date range with limit (for leaderboard).
+   */
+  @Query("SELECT a.author.userId, a.author.fullName, a.author.email, a.author.avatarUrl, " +
+      "SUM(d.amount), COUNT(d) " +
+      "FROM Donation d JOIN d.article a " +
+      "WHERE d.createdAt >= :fromDate AND d.createdAt <= :toDate " +
+      "GROUP BY a.author.userId, a.author.fullName, a.author.email, a.author.avatarUrl " +
+      "ORDER BY SUM(d.amount) DESC")
+  List<Object[]> findTopDonationReceiversByDateRange(
+      @Param("fromDate") LocalDateTime fromDate,
+      @Param("toDate") LocalDateTime toDate,
+      org.springframework.data.domain.Pageable pageable);
 }
