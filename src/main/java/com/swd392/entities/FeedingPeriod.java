@@ -65,6 +65,7 @@ public class FeedingPeriod {
     private List<UserFeeding> userFeedings = new ArrayList<>();
 
     public enum PeriodStatus {
+        PENDING,      // Default status if semester hasn't started yet
         ACTIVE,       // Kỳ đang hoạt động, scheduler feed hàng ngày
         COMPLETED,    // Kỳ đã kết thúc (auto hoặc manual)
         CANCELLED     // Bị hủy bởi admin

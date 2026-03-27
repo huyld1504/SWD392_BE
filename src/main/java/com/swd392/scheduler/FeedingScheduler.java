@@ -76,4 +76,38 @@ public class FeedingScheduler {
             log.info("  Auto-completed {} period(s).", completed);
         }
     }
+
+    /**
+     * JOB 3: Auto-Activate Pending Periods (00:00 AM every day)
+     * Find PENDING feeding periods whose semester startDate <= today → set ACTIVE.
+     */
+    @Scheduled(cron = "0 0 0 * * *")
+    public void autoActivatePendingPeriods() {
+        log.info("\n  ═══════════════════════════════════════════");
+        log.info("  ║ SCHEDULER ─ Auto-Activate Pending Periods ║");
+        log.info("  ═══════════════════════════════════════════");
+
+        LocalDate today = LocalDate.now();
+        List<FeedingPeriod> pendingPeriods = feedingPeriodRepository
+            .findByStatus(FeedingPeriod.PeriodStatus.PENDING);
+
+        int activated = 0;
+        for (FeedingPeriod period : pendingPeriods) {
+            Semester semester = period.getSemester();
+            if (!today.isBefore(semester.getStartDate())) {
+                period.setStatus(FeedingPeriod.PeriodStatus.ACTIVE);
+                feedingPeriodRepository.save(period);
+                activated++;
+
+                log.info("  ✓ Auto-activated period {} ({}) – started {}",
+                    period.getPeriodId(), semester.getSemesterCode(), semester.getStartDate());
+            }
+        }
+
+        if (activated == 0) {
+            log.info("  No pending periods to activate.");
+        } else {
+            log.info("  Auto-activated {} period(s).", activated);
+        }
+    }
 }

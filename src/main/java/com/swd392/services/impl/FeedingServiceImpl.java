@@ -49,47 +49,69 @@ public class FeedingServiceImpl implements FeedingService {
     public FeedingPeriodResponseDTO createFeedingPeriod(CreateFeedingRequestDTO request, String adminEmail) {
         RequestContext.setCurrentLayer("SERVICE");
         log.info("\n    ├─ SERVICE ─ createFeedingPeriod\n    │ SemesterCode : {}\n    │ Admin        : {}",
-            request.getSemesterCode(), adminEmail);
+                request.getSemesterCode(), adminEmail);
 
         User admin = userRepository.findByEmail(adminEmail)
-            .orElseThrow(() -> new AppException("Admin not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Admin not found", HttpStatus.NOT_FOUND));
 
         // Semester must already exist (created via CRUD API)
         Semester semester = semesterRepository.findBySemesterCode(request.getSemesterCode().toUpperCase())
-            .orElseThrow(() -> new AppException(
-                "Semester not found: " + request.getSemesterCode()
-                    + ". Please create the semester first via POST /api/v1/semesters",
-                HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException(
+                        "Semester not found: " + request.getSemesterCode()
+                                + ". Please create the semester first via POST /api/v1/semesters",
+                        HttpStatus.NOT_FOUND));
 
         // Cannot create feeding for a past semester (endDate < today)
         LocalDate today = LocalDate.now();
         if (today.isAfter(semester.getEndDate())) {
             throw new AppException(
-                "Cannot create feeding for past semester " + semester.getSemesterCode()
-                    + " (ended " + semester.getEndDate() + ")",
-                HttpStatus.BAD_REQUEST);
-        }
-
-        // Check if feeding period already exists for this semester
-        if (feedingPeriodRepository.existsBySemesterSemesterId(semester.getSemesterId())) {
-            throw new AppException(
-                "Feeding period already exists for semester " + semester.getSemesterCode(),
-                HttpStatus.CONFLICT);
+                    "Cannot create feeding for past semester " + semester.getSemesterCode()
+                            + " (ended " + semester.getEndDate() + ")",
+                    HttpStatus.BAD_REQUEST);
         }
 
         BigDecimal grantAmount = request.getGrantAmount() != null
-            ? request.getGrantAmount()
-            : DEFAULT_GRANT_AMOUNT;
+                ? request.getGrantAmount()
+                : DEFAULT_GRANT_AMOUNT;
+                
+        // If semester hasn't started yet, set status to PENDING
+        FeedingPeriod.PeriodStatus initialStatus = today.isBefore(semester.getStartDate()) 
+            ? FeedingPeriod.PeriodStatus.PENDING 
+            : FeedingPeriod.PeriodStatus.ACTIVE;
 
-        FeedingPeriod period = new FeedingPeriod();
-        period.setSemester(semester);
-        period.setGrantAmount(grantAmount);
-        period.setStatus(FeedingPeriod.PeriodStatus.ACTIVE);
-        period.setCreatedBy(admin);
+        // Check if feeding period already exists for this semester
+        FeedingPeriod period;
+        Optional<FeedingPeriod> existingPeriod = feedingPeriodRepository.findBySemesterSemesterId(semester.getSemesterId());
+        
+        if (existingPeriod.isPresent()) {
+            period = existingPeriod.get();
+            // If it exists but is CANCELLED, we can reuse it (effectively "creating a new one")
+            if (period.getStatus() == FeedingPeriod.PeriodStatus.CANCELLED) {
+                log.info("\n    │ Reusing previously CANCELLED period for semester {}", semester.getSemesterCode());
+                period.setGrantAmount(grantAmount);
+                period.setStatus(initialStatus);
+                period.setCreatedBy(admin); // update to the re-creator
+                // Ensure stats are reset if it was cancelled
+                period.setTotalCoinsFed(BigDecimal.ZERO);
+                period.setTotalUsersFed(0);
+            } else {
+                throw new AppException(
+                        "An active, pending, or completed feeding period already exists for semester " + semester.getSemesterCode(),
+                        HttpStatus.CONFLICT);
+            }
+        } else {
+            period = new FeedingPeriod();
+            period.setSemester(semester);
+            period.setGrantAmount(grantAmount);
+            period.setStatus(initialStatus);
+            period.setCreatedBy(admin);
+        }
+
         feedingPeriodRepository.save(period);
 
-        log.info("\n    └─ SERVICE ─ createFeedingPeriod\n      Status   : ACTIVE\n      Period   : id={}\n      Semester : {} ({} → {})",
-            period.getPeriodId(), semester.getSemesterCode(), semester.getStartDate(), semester.getEndDate());
+        log.info(
+                "\n    └─ SERVICE ─ createFeedingPeriod\n      Status   : {}\n      Period   : id={}\n      Semester : {} ({} → {})",
+                initialStatus, period.getPeriodId(), semester.getSemesterCode(), semester.getStartDate(), semester.getEndDate());
 
         return mapToResponseDTO(period);
     }
@@ -102,11 +124,11 @@ public class FeedingServiceImpl implements FeedingService {
         log.info("\n    ├─ SERVICE ─ updateFeedingPeriod\n    │ PeriodId : {}", periodId);
 
         FeedingPeriod period = feedingPeriodRepository.findById(periodId)
-            .orElseThrow(() -> new AppException("Feeding period not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Feeding period not found", HttpStatus.NOT_FOUND));
 
-        if (period.getStatus() != FeedingPeriod.PeriodStatus.ACTIVE) {
-            throw new AppException("Can only update ACTIVE periods. Current: " + period.getStatus(),
-                HttpStatus.BAD_REQUEST);
+        if (period.getStatus() != FeedingPeriod.PeriodStatus.ACTIVE && period.getStatus() != FeedingPeriod.PeriodStatus.PENDING) {
+            throw new AppException("Can only update ACTIVE or PENDING periods. Current: " + period.getStatus(),
+                    HttpStatus.BAD_REQUEST);
         }
 
         if (request.getGrantAmount() != null) {
@@ -127,11 +149,12 @@ public class FeedingServiceImpl implements FeedingService {
         log.info("\n    ├─ SERVICE ─ completeFeedingPeriod\n    │ PeriodId : {}", periodId);
 
         FeedingPeriod period = feedingPeriodRepository.findById(periodId)
-            .orElseThrow(() -> new AppException("Feeding period not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Feeding period not found", HttpStatus.NOT_FOUND));
 
         if (period.getStatus() != FeedingPeriod.PeriodStatus.ACTIVE) {
+            // Usually, only ACTIVE periods can be completed manually
             throw new AppException("Can only complete ACTIVE periods. Current: " + period.getStatus(),
-                HttpStatus.BAD_REQUEST);
+                    HttpStatus.BAD_REQUEST);
         }
 
         period.setStatus(FeedingPeriod.PeriodStatus.COMPLETED);
@@ -154,16 +177,16 @@ public class FeedingServiceImpl implements FeedingService {
         log.info("\n    ├─ SERVICE ─ cancelFeedingPeriod\n    │ PeriodId : {}", periodId);
 
         FeedingPeriod period = feedingPeriodRepository.findById(periodId)
-            .orElseThrow(() -> new AppException("Feeding period not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Feeding period not found", HttpStatus.NOT_FOUND));
 
-        if (period.getStatus() != FeedingPeriod.PeriodStatus.ACTIVE) {
-            throw new AppException("Can only cancel ACTIVE periods", HttpStatus.BAD_REQUEST);
+        if (period.getStatus() != FeedingPeriod.PeriodStatus.ACTIVE && period.getStatus() != FeedingPeriod.PeriodStatus.PENDING) {
+            throw new AppException("Can only cancel ACTIVE or PENDING periods", HttpStatus.BAD_REQUEST);
         }
 
         if (period.getTotalUsersFed() > 0) {
             throw new AppException(
-                "Cannot cancel: " + period.getTotalUsersFed() + " users have already been fed",
-                HttpStatus.BAD_REQUEST);
+                    "Cannot cancel: " + period.getTotalUsersFed() + " users have already been fed",
+                    HttpStatus.BAD_REQUEST);
         }
 
         period.setStatus(FeedingPeriod.PeriodStatus.CANCELLED);
@@ -181,11 +204,11 @@ public class FeedingServiceImpl implements FeedingService {
         log.info("\n    ├─ SERVICE ─ triggerFeeding (Manual)\n    │ PeriodId : {}", periodId);
 
         FeedingPeriod period = feedingPeriodRepository.findById(periodId)
-            .orElseThrow(() -> new AppException("Feeding period not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Feeding period not found", HttpStatus.NOT_FOUND));
 
         if (period.getStatus() != FeedingPeriod.PeriodStatus.ACTIVE) {
             throw new AppException("Can only trigger ACTIVE periods. Current: " + period.getStatus(),
-                HttpStatus.BAD_REQUEST);
+                    HttpStatus.BAD_REQUEST);
         }
 
         // Check if semester has started
@@ -194,16 +217,16 @@ public class FeedingServiceImpl implements FeedingService {
 
         if (today.isBefore(semester.getStartDate())) {
             throw new AppException(
-                "Cannot trigger feeding: semester " + semester.getSemesterCode()
-                    + " has not started yet (starts " + semester.getStartDate() + ")",
-                HttpStatus.BAD_REQUEST);
+                    "Cannot trigger feeding: semester " + semester.getSemesterCode()
+                            + " has not started yet (starts " + semester.getStartDate() + ")",
+                    HttpStatus.BAD_REQUEST);
         }
 
         if (today.isAfter(semester.getEndDate())) {
             throw new AppException(
-                "Cannot trigger feeding: semester " + semester.getSemesterCode()
-                    + " has already ended (" + semester.getEndDate() + ")",
-                HttpStatus.BAD_REQUEST);
+                    "Cannot trigger feeding: semester " + semester.getSemesterCode()
+                            + " has already ended (" + semester.getEndDate() + ")",
+                    HttpStatus.BAD_REQUEST);
         }
 
         int processed = processFeedingForPeriod(period);
@@ -248,39 +271,37 @@ public class FeedingServiceImpl implements FeedingService {
     @Override
     @Transactional(readOnly = true)
     public PaginationResponseDTO<List<FeedingPeriodResponseDTO>> getAllFeedingPeriods(
-        int page, int size, String status, String semesterCode) {
+            int page, int size, String status, String semesterCode) {
 
         log.info("\n    ├─ SERVICE ─ getAllFeedingPeriods\n    │ Page : {}, Size : {}, Status : {}, Semester : {}",
-            page, size, status, semesterCode);
+                page, size, status, semesterCode);
 
         Specification<FeedingPeriod> spec = Specification.where(null);
 
         if (status != null && !status.isBlank()) {
-            FeedingPeriod.PeriodStatus periodStatus =
-                FeedingPeriod.PeriodStatus.valueOf(status.toUpperCase());
-            spec = spec.and((root, query, cb) ->
-                cb.equal(root.get("status"), periodStatus));
+            FeedingPeriod.PeriodStatus periodStatus = FeedingPeriod.PeriodStatus.valueOf(status.toUpperCase());
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), periodStatus));
         }
 
         if (semesterCode != null && !semesterCode.isBlank()) {
-            spec = spec.and((root, query, cb) ->
-                cb.equal(root.get("semester").get("semesterCode"), semesterCode.toUpperCase()));
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("semester").get("semesterCode"),
+                    semesterCode.toUpperCase()));
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<FeedingPeriod> periodPage = feedingPeriodRepository.findAll(spec, pageable);
 
         List<FeedingPeriodResponseDTO> dtos = periodPage.getContent().stream()
-            .map(this::mapToResponseDTO)
-            .toList();
+                .map(this::mapToResponseDTO)
+                .toList();
 
         return PaginationResponseDTO.<List<FeedingPeriodResponseDTO>>builder()
-            .totalItems(periodPage.getTotalElements())
-            .totalPages(periodPage.getTotalPages())
-            .currentPage(page)
-            .pageSize(size)
-            .data(dtos)
-            .build();
+                .totalItems(periodPage.getTotalElements())
+                .totalPages(periodPage.getTotalPages())
+                .currentPage(page)
+                .pageSize(size)
+                .data(dtos)
+                .build();
     }
 
     // ==================== 8. GET FEEDING DETAIL ====================
@@ -291,7 +312,7 @@ public class FeedingServiceImpl implements FeedingService {
         log.info("\n    ├─ SERVICE ─ getFeedingDetail\n    │ Period : {}", periodId);
 
         FeedingPeriod period = feedingPeriodRepository.findById(periodId)
-            .orElseThrow(() -> new AppException("Feeding period not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Feeding period not found", HttpStatus.NOT_FOUND));
 
         return mapToDetailResponseDTO(period);
     }
@@ -305,19 +326,19 @@ public class FeedingServiceImpl implements FeedingService {
     private int processFeedingForPeriod(FeedingPeriod period) {
         // Get system wallet
         Wallet systemWallet = walletRepository.findByWalletType(Wallet.WalletType.SYSTEM)
-            .orElseThrow(() -> new AppException(
-                "System wallet not found. Please initialize it first.", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException(
+                        "System wallet not found. Please initialize it first.", HttpStatus.NOT_FOUND));
 
         // Get IDs of users already fed in this period
         Set<Long> fedUserIds = userFeedingRepository
-            .findFedUserIdsByPeriodId(period.getPeriodId())
-            .stream().collect(Collectors.toSet());
+                .findFedUserIdsByPeriodId(period.getPeriodId())
+                .stream().collect(Collectors.toSet());
 
         // Get ACTIVE users who haven't been fed yet
         List<User> unfedUsers = userRepository.findAll().stream()
-            .filter(u -> u.getStatus() == User.UserStatus.ACTIVE)
-            .filter(u -> !fedUserIds.contains(u.getUserId()))
-            .toList();
+                .filter(u -> u.getStatus() == User.UserStatus.ACTIVE)
+                .filter(u -> !fedUserIds.contains(u.getUserId()))
+                .toList();
 
         if (unfedUsers.isEmpty()) {
             log.info("\n    │ No unfed users found for period {}", period.getPeriodId());
@@ -325,7 +346,7 @@ public class FeedingServiceImpl implements FeedingService {
         }
 
         BigDecimal coinsNeeded = period.getGrantAmount()
-            .multiply(BigDecimal.valueOf(unfedUsers.size()));
+                .multiply(BigDecimal.valueOf(unfedUsers.size()));
 
         // Check system wallet balance
         if (systemWallet.getBalance().compareTo(coinsNeeded) < 0) {
@@ -335,17 +356,17 @@ public class FeedingServiceImpl implements FeedingService {
                     + "\n    │   Coins needed  : {}"
                     + "\n    │   System balance: {}"
                     + "\n    │   DEFICIT       : {}",
-                period.getPeriodId(), unfedUsers.size(), coinsNeeded,
-                systemWallet.getBalance(), deficit);
+                    period.getPeriodId(), unfedUsers.size(), coinsNeeded,
+                    systemWallet.getBalance(), deficit);
             throw new AppException(
-                "System wallet insufficient. Need: " + coinsNeeded
-                    + ", Have: " + systemWallet.getBalance()
-                    + ", Deficit: " + deficit,
-                HttpStatus.BAD_REQUEST);
+                    "System wallet insufficient. Need: " + coinsNeeded
+                            + ", Have: " + systemWallet.getBalance()
+                            + ", Deficit: " + deficit,
+                    HttpStatus.BAD_REQUEST);
         }
 
         log.info("\n    │ Feeding {} unfed users × {} coins = {} total",
-            unfedUsers.size(), period.getGrantAmount(), coinsNeeded);
+                unfedUsers.size(), period.getGrantAmount(), coinsNeeded);
 
         int processed = 0;
         Semester semester = period.getSemester();
@@ -353,18 +374,18 @@ public class FeedingServiceImpl implements FeedingService {
         for (User user : unfedUsers) {
             // Find or create MAIN wallet
             Wallet mainWallet = walletRepository
-                .findByUserAndWalletType(user, Wallet.WalletType.MAIN)
-                .orElseGet(() -> {
-                    Wallet newWallet = new Wallet();
-                    newWallet.setUser(user);
-                    newWallet.setWalletType(Wallet.WalletType.MAIN);
-                    newWallet.setCurrency(Wallet.Currency.BLUE);
-                    newWallet.setStatus(Wallet.WalletStatus.ACTIVE);
-                    newWallet.setBalance(BigDecimal.ZERO);
-                    walletRepository.save(newWallet);
-                    log.info("\n    │ CREATED MAIN wallet for: {}", user.getEmail());
-                    return newWallet;
-                });
+                    .findByUserAndWalletType(user, Wallet.WalletType.MAIN)
+                    .orElseGet(() -> {
+                        Wallet newWallet = new Wallet();
+                        newWallet.setUser(user);
+                        newWallet.setWalletType(Wallet.WalletType.MAIN);
+                        newWallet.setCurrency(Wallet.Currency.BLUE);
+                        newWallet.setStatus(Wallet.WalletStatus.ACTIVE);
+                        newWallet.setBalance(BigDecimal.ZERO);
+                        walletRepository.save(newWallet);
+                        log.info("\n    │ CREATED MAIN wallet for: {}", user.getEmail());
+                        return newWallet;
+                    });
 
             // Add coins to user wallet
             mainWallet.setBalance(mainWallet.getBalance().add(period.getGrantAmount()));
@@ -404,7 +425,7 @@ public class FeedingServiceImpl implements FeedingService {
         feedingPeriodRepository.save(period);
 
         log.info("\n    │ ✅ Fed {} users | System balance: {} | Period total: {} users, {} coins",
-            processed, systemWallet.getBalance(), period.getTotalUsersFed(), period.getTotalCoinsFed());
+                processed, systemWallet.getBalance(), period.getTotalUsersFed(), period.getTotalCoinsFed());
 
         return processed;
     }
@@ -417,19 +438,19 @@ public class FeedingServiceImpl implements FeedingService {
     private FeedingPeriodResponseDTO mapToResponseDTO(FeedingPeriod period) {
         Semester s = period.getSemester();
         return FeedingPeriodResponseDTO.builder()
-            .periodId(period.getPeriodId())
-            .semesterCode(s.getSemesterCode())
-            .semesterName(s.getSemesterName())
-            .startDate(s.getStartDate())
-            .endDate(s.getEndDate())
-            .grantAmount(period.getGrantAmount())
-            .status(period.getStatus().name())
-            .createdBy(period.getCreatedBy() != null ? mapToUserInfo(period.getCreatedBy()) : null)
-            .createdAt(period.getCreatedAt())
-            .updatedAt(period.getUpdatedAt())
-            .totalUsersFed(period.getTotalUsersFed())
-            .totalCoinsFed(period.getTotalCoinsFed())
-            .build();
+                .periodId(period.getPeriodId())
+                .semesterCode(s.getSemesterCode())
+                .semesterName(s.getSemesterName())
+                .startDate(s.getStartDate())
+                .endDate(s.getEndDate())
+                .grantAmount(period.getGrantAmount())
+                .status(period.getStatus().name())
+                .createdBy(period.getCreatedBy() != null ? mapToUserInfo(period.getCreatedBy()) : null)
+                .createdAt(period.getCreatedAt())
+                .updatedAt(period.getUpdatedAt())
+                .totalUsersFed(period.getTotalUsersFed())
+                .totalCoinsFed(period.getTotalCoinsFed())
+                .build();
     }
 
     /**
@@ -440,29 +461,30 @@ public class FeedingServiceImpl implements FeedingService {
 
         // Build user details
         List<UserFeeding> userFeedings = userFeedingRepository
-            .findByFeedingPeriodPeriodId(period.getPeriodId());
+                .findByFeedingPeriodPeriodId(period.getPeriodId());
 
         List<UserFeedingDetailDTO> userDetails = userFeedings.stream()
-            .map(uf -> new UserFeedingDetailDTO(
-                uf.getFeedingId(),
-                mapToUserInfo(uf.getUser()),
-                uf.getAmountReceived(),
-                uf.getFedAt()))
-            .sorted((a, b) -> b.fedAt().compareTo(a.fedAt()))  // newest first
-            .toList();
+                .map(uf -> new UserFeedingDetailDTO(
+                        uf.getFeedingId(),
+                        mapToUserInfo(uf.getUser()),
+                        uf.getAmountReceived(),
+                        uf.getFedAt()))
+                .sorted((a, b) -> b.fedAt().compareTo(a.fedAt())) // newest first
+                .toList();
 
         dto.setUsers(userDetails);
 
         // Build dashboard stats
         long totalActiveUsers = userRepository.findAll().stream()
-            .filter(u -> u.getStatus() == User.UserStatus.ACTIVE)
-            .count();
+                .filter(u -> u.getStatus() == User.UserStatus.ACTIVE)
+                .count();
 
         int pendingUsers = (int) totalActiveUsers - period.getTotalUsersFed();
-        if (pendingUsers < 0) pendingUsers = 0;
+        if (pendingUsers < 0)
+            pendingUsers = 0;
 
         BigDecimal estimatedNeeded = period.getGrantAmount()
-            .multiply(BigDecimal.valueOf(pendingUsers));
+                .multiply(BigDecimal.valueOf(pendingUsers));
 
         BigDecimal systemBalance = BigDecimal.ZERO;
         Optional<Wallet> systemWalletOpt = walletRepository.findByWalletType(Wallet.WalletType.SYSTEM);
@@ -476,13 +498,12 @@ public class FeedingServiceImpl implements FeedingService {
         }
 
         dto.setStats(new FeedingStatsDTO(
-            period.getTotalUsersFed(),
-            period.getTotalCoinsFed(),
-            pendingUsers,
-            estimatedNeeded,
-            systemBalance,
-            deficit
-        ));
+                period.getTotalUsersFed(),
+                period.getTotalCoinsFed(),
+                pendingUsers,
+                estimatedNeeded,
+                systemBalance,
+                deficit));
 
         return dto;
     }

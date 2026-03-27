@@ -50,13 +50,11 @@ public class SemesterController {
 
     // ==================== CREATE SEMESTER ====================
 
-    @Operation(summary = "Create a semester (Admin)",
-        description = "Create a new semester. Dates are auto-calculated from the code: "
-            + "SP26 (Spring, Jan-Apr), SU26 (Summer, May-Aug), FA26 (Fall, Sep-Dec).",
-        security = @SecurityRequirement(name = "Bearer Authentication"))
+    @Operation(summary = "Create a semester (Admin)", description = "Create a new semester. Dates are auto-calculated from the code: "
+            + "SP26 (Spring, Jan-Apr), SU26 (Summer, May-Aug), FA26 (Fall, Sep-Dec).", security = @SecurityRequirement(name = "Bearer Authentication"))
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Semester created"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Semester already exists", content = @Content)
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Semester created"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Semester already exists", content = @Content)
     })
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -75,27 +73,25 @@ public class SemesterController {
 
         // Create with user-provided dates
         Semester semester = Semester.fromCodeAndDates(
-            code, request.getStartDate(), request.getEndDate());
+                code, request.getStartDate(), request.getEndDate());
         semesterRepository.save(semester);
 
         log.info("\n  └─ CONTROLLER ─ createSemester\n    Created: {} ({} → {})",
-            semester.getSemesterCode(), semester.getStartDate(), semester.getEndDate());
+                semester.getSemesterCode(), semester.getStartDate(), semester.getEndDate());
 
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.<SemesterResponseDTO>builder()
-                .success(true)
-                .message("Semester " + semester.getSemesterName() + " created successfully")
-                .data(mapToDTO(semester))
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
+                .body(ApiResponse.<SemesterResponseDTO>builder()
+                        .success(true)
+                        .message("Semester " + semester.getSemesterName() + " created successfully")
+                        .data(mapToDTO(semester))
+                        .requestId(RequestContext.getRequestId())
+                        .timestamp(LocalDateTime.now().toString())
+                        .build());
     }
 
     // ==================== GET ALL SEMESTERS ====================
 
-    @Operation(summary = "Get all semesters (Admin)",
-        description = "Retrieve all semesters ordered by start date descending.",
-        security = @SecurityRequirement(name = "Bearer Authentication"))
+    @Operation(summary = "Get all semesters (Admin)", description = "Retrieve all semesters ordered by start date descending.", security = @SecurityRequirement(name = "Bearer Authentication"))
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<SemesterResponseDTO>>> getAllSemesters() {
@@ -104,69 +100,63 @@ public class SemesterController {
         log.info("\n  ┌─ CONTROLLER ─ getAllSemesters");
 
         List<SemesterResponseDTO> semesters = semesterRepository.findAllByOrderByStartDateDesc()
-            .stream()
-            .map(this::mapToDTO)
-            .toList();
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
 
         return ResponseEntity.ok(
-            ApiResponse.<List<SemesterResponseDTO>>builder()
-                .success(true)
-                .message("Semesters retrieved successfully")
-                .data(semesters)
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
+                ApiResponse.<List<SemesterResponseDTO>>builder()
+                        .success(true)
+                        .message("Semesters retrieved successfully")
+                        .data(semesters)
+                        .requestId(RequestContext.getRequestId())
+                        .timestamp(LocalDateTime.now().toString())
+                        .build());
     }
 
     // ==================== GET SEMESTER BY CODE ====================
 
-    @Operation(summary = "Get semester detail (Admin)",
-        description = "Get detailed info of a specific semester.",
-        security = @SecurityRequirement(name = "Bearer Authentication"))
+    @Operation(summary = "Get semester detail (Admin)", description = "Get detailed info of a specific semester.", security = @SecurityRequirement(name = "Bearer Authentication"))
     @GetMapping("/{semesterCode}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<SemesterResponseDTO>> getSemester(
-            @Parameter(description = "Semester code", example = "SP26")
-            @PathVariable String semesterCode) {
+            @Parameter(description = "Semester code", example = "SP26") @PathVariable String semesterCode) {
 
         RequestContext.setCurrentLayer("CONTROLLER");
 
         Semester semester = semesterRepository.findBySemesterCode(semesterCode.toUpperCase())
-            .orElseThrow(() -> new AppException("Semester not found: " + semesterCode, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Semester not found: " + semesterCode, HttpStatus.NOT_FOUND));
 
         return ResponseEntity.ok(
-            ApiResponse.<SemesterResponseDTO>builder()
-                .success(true)
-                .message("Semester retrieved successfully")
-                .data(mapToDTO(semester))
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
+                ApiResponse.<SemesterResponseDTO>builder()
+                        .success(true)
+                        .message("Semester retrieved successfully")
+                        .data(mapToDTO(semester))
+                        .requestId(RequestContext.getRequestId())
+                        .timestamp(LocalDateTime.now().toString())
+                        .build());
     }
 
     // ==================== DELETE SEMESTER ====================
 
-    @Operation(summary = "Delete a semester (Admin)",
-        description = "Delete a semester. Only allowed if no feeding period has been created for it.",
-        security = @SecurityRequirement(name = "Bearer Authentication"))
+    @Operation(summary = "Delete a semester (Admin)", description = "Delete a semester. Only allowed if no feeding period has been created for it.", security = @SecurityRequirement(name = "Bearer Authentication"))
     @DeleteMapping("/{semesterCode}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSemester(
-            @Parameter(description = "Semester code", example = "SP26")
-            @PathVariable String semesterCode) {
+            @Parameter(description = "Semester code", example = "SP26") @PathVariable String semesterCode) {
 
         RequestContext.setCurrentLayer("CONTROLLER");
         log.info("\n  ┌─ CONTROLLER ─ deleteSemester\n  │ Code : {}", semesterCode);
 
         Semester semester = semesterRepository.findBySemesterCode(semesterCode.toUpperCase())
-            .orElseThrow(() -> new AppException("Semester not found: " + semesterCode, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Semester not found: " + semesterCode, HttpStatus.NOT_FOUND));
 
         // Cannot delete if a feeding period exists
         if (feedingPeriodRepository.existsBySemesterSemesterId(semester.getSemesterId())) {
             throw new AppException(
-                "Cannot delete semester " + semesterCode + ": a feeding period exists for it. "
-                    + "Cancel or complete the feeding period first.",
-                HttpStatus.BAD_REQUEST);
+                    "Cannot delete semester " + semesterCode + ": a feeding period exists for it. "
+                            + "Cancel or complete the feeding period first.",
+                    HttpStatus.BAD_REQUEST);
         }
 
         semesterRepository.delete(semester);
@@ -174,33 +164,30 @@ public class SemesterController {
         log.info("\n  └─ CONTROLLER ─ deleteSemester\n    Deleted: {}", semesterCode);
 
         return ResponseEntity.ok(
-            ApiResponse.<Void>builder()
-                .success(true)
-                .message("Semester " + semesterCode + " deleted successfully")
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message("Semester " + semesterCode + " deleted successfully")
+                        .requestId(RequestContext.getRequestId())
+                        .timestamp(LocalDateTime.now().toString())
+                        .build());
     }
 
     // ==================== TOP 5 STUDENTS LEADERBOARD ====================
 
-    @Operation(summary = "Get top 5 students by donation received (Admin/Lecture)",
-        description = "Returns the top 5 students who received the most donation coins in a semester. "
-            + "Includes total coins received, donation count, and approved article count.",
-        security = @SecurityRequirement(name = "Bearer Authentication"))
+    @Operation(summary = "Get top 5 students by donation received (Admin/Lecture)", description = "Returns the top 5 students who received the most donation coins in a semester. "
+            + "Includes total coins received, donation count, and approved article count.", security = @SecurityRequirement(name = "Bearer Authentication"))
     @GetMapping("/{semesterCode}/leaderboard")
     @PreAuthorize("hasAnyRole('ADMIN', 'LECTURE')")
     public ResponseEntity<ApiResponse<List<TopStudentDTO>>> getTopStudents(
-            @Parameter(description = "Semester code (e.g., SP26)", required = true, example = "SP26")
-            @PathVariable String semesterCode) {
+            @Parameter(description = "Semester code (e.g., SP26)", required = true, example = "SP26") @PathVariable String semesterCode) {
 
         RequestContext.setCurrentLayer("CONTROLLER");
         log.info("\n  ┌─ CONTROLLER ─ getTopStudents\n  │ Semester : {}", semesterCode);
 
         // 1. Find semester
         Semester semester = semesterRepository.findBySemesterCode(semesterCode.toUpperCase())
-            .orElseThrow(() -> new AppException(
-                "Semester not found: " + semesterCode, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException(
+                        "Semester not found: " + semesterCode, HttpStatus.NOT_FOUND));
 
         // 2. Convert semester dates to LocalDateTime for queries
         LocalDateTime fromDate = semester.getStartDate().atStartOfDay();
@@ -208,7 +195,7 @@ public class SemesterController {
 
         // 3. Get top 5 donation receivers in this semester
         List<Object[]> topDonations = donationRepository.findTopDonationReceiversByDateRange(
-            fromDate, toDate, PageRequest.of(0, 5));
+                fromDate, toDate, PageRequest.of(0, 5));
 
         // 4. Build response with article count for each student
         List<TopStudentDTO> leaderboard = new ArrayList<>();
@@ -224,45 +211,45 @@ public class SemesterController {
 
             // Count approved articles for this student in the semester
             long approvedArticles = articleRepository.countApprovedByAuthorAndDateRange(
-                userId, fromDate, toDate);
+                    userId, fromDate, toDate);
 
             leaderboard.add(TopStudentDTO.builder()
-                .rank(rank++)
-                .student(new UserInfoDTO(userId, fullName, email, avatarUrl))
-                .totalDonationReceived(totalDonation)
-                .donationCount(donationCount)
-                .approvedArticleCount(approvedArticles)
-                .build());
+                    .rank(rank++)
+                    .student(new UserInfoDTO(userId, fullName, email, avatarUrl))
+                    .totalDonationReceived(totalDonation)
+                    .donationCount(donationCount)
+                    .approvedArticleCount(approvedArticles)
+                    .build());
         }
 
         log.info("\n  └─ CONTROLLER ─ getTopStudents\n    Results : {} students", leaderboard.size());
 
         return ResponseEntity.ok(
-            ApiResponse.<List<TopStudentDTO>>builder()
-                .success(true)
-                .message("Top students for semester " + semester.getSemesterName())
-                .data(leaderboard)
-                .requestId(RequestContext.getRequestId())
-                .timestamp(LocalDateTime.now().toString())
-                .build());
+                ApiResponse.<List<TopStudentDTO>>builder()
+                        .success(true)
+                        .message("Top students for semester " + semester.getSemesterName())
+                        .data(leaderboard)
+                        .requestId(RequestContext.getRequestId())
+                        .timestamp(LocalDateTime.now().toString())
+                        .build());
     }
 
     // ==================== HELPER ====================
 
     private SemesterResponseDTO mapToDTO(Semester semester) {
-        Optional<FeedingPeriod> feedingPeriod =
-            feedingPeriodRepository.findBySemesterSemesterId(semester.getSemesterId());
+        Optional<FeedingPeriod> feedingPeriod = feedingPeriodRepository
+                .findBySemesterSemesterId(semester.getSemesterId());
 
         return SemesterResponseDTO.builder()
-            .semesterId(semester.getSemesterId())
-            .semesterCode(semester.getSemesterCode())
-            .semesterName(semester.getSemesterName())
-            .startDate(semester.getStartDate())
-            .endDate(semester.getEndDate())
-            .status(semester.getStatus().name())
-            .createdAt(semester.getCreatedAt())
-            .hasFeedingPeriod(feedingPeriod.isPresent())
-            .feedingPeriodId(feedingPeriod.map(FeedingPeriod::getPeriodId).orElse(null))
-            .build();
+                .semesterId(semester.getSemesterId())
+                .semesterCode(semester.getSemesterCode())
+                .semesterName(semester.getSemesterName())
+                .startDate(semester.getStartDate())
+                .endDate(semester.getEndDate())
+                .status(semester.getStatus().name())
+                .createdAt(semester.getCreatedAt())
+                .hasFeedingPeriod(feedingPeriod.isPresent())
+                .feedingPeriodId(feedingPeriod.map(FeedingPeriod::getPeriodId).orElse(null))
+                .build();
     }
 }

@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface FeedingPeriodRepository
-    extends JpaRepository<FeedingPeriod, Integer>, JpaSpecificationExecutor<FeedingPeriod> {
+        extends JpaRepository<FeedingPeriod, Integer>, JpaSpecificationExecutor<FeedingPeriod> {
 
     /**
      * Check if there's a feeding period with a specific status.
