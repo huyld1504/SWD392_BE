@@ -99,7 +99,7 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
 
             if (action.equals("UPDATE")) {
                 return article.getAuthor().getUserId().equals(currentUser.getUserId())
-                        && (article.getStatus() == Article.ArticleStatus.PENDING
+                        && (article.getStatus() == Article.ArticleStatus.DRAFT
                         || article.getStatus() == Article.ArticleStatus.REJECTED);
             }
 

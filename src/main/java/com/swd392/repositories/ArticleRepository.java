@@ -8,6 +8,18 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface ArticleRepository extends JpaRepository<Article, Integer>, JpaSpecificationExecutor<Article> {
 
+    /**
+     * Count approved articles by author within a date range (for semester leaderboard).
+     */
+    @Query("SELECT COUNT(a) FROM Article a " +
+           "WHERE a.author.userId = :authorId " +
+           "AND a.status = 'APPROVED' " +
+           "AND a.approvedAt >= :fromDate AND a.approvedAt <= :toDate")
+    long countApprovedByAuthorAndDateRange(
+        @org.springframework.data.repository.query.Param("authorId") Long authorId,
+        @org.springframework.data.repository.query.Param("fromDate") java.time.LocalDateTime fromDate,
+        @org.springframework.data.repository.query.Param("toDate") java.time.LocalDateTime toDate);
+
     @Modifying
     @Query(value = """
     UPDATE articles 

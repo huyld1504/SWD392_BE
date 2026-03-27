@@ -1,36 +1,45 @@
 package com.swd392.repositories;
 
 import com.swd392.entities.FeedingPeriod;
+import com.swd392.entities.Semester;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface FeedingPeriodRepository
-    extends JpaRepository<FeedingPeriod, Integer>, JpaSpecificationExecutor<FeedingPeriod> {
+        extends JpaRepository<FeedingPeriod, Integer>, JpaSpecificationExecutor<FeedingPeriod> {
 
-  /**
-   * Check if there's a feeding period with a specific status.
-   */
-  boolean existsByStatus(FeedingPeriod.PeriodStatus status);
+    /**
+     * Check if there's a feeding period with a specific status.
+     */
+    boolean existsByStatus(FeedingPeriod.PeriodStatus status);
 
-  /**
-   * Find completed periods within a date range (check if a month already ran).
-   */
-  List<FeedingPeriod> findByStatusAndExecutedAtBetween(
-      FeedingPeriod.PeriodStatus status, LocalDateTime from, LocalDateTime to);
+    /**
+     * Find feeding period by semester.
+     */
+    Optional<FeedingPeriod> findBySemester(Semester semester);
 
-  /**
-   * Find PENDING periods scheduled for today or earlier (ready to execute).
-   */
-  List<FeedingPeriod> findByStatusAndScheduledAtLessThanEqual(
-      FeedingPeriod.PeriodStatus status, LocalDateTime dateTime);
+    /**
+     * Find feeding period by semester ID.
+     */
+    Optional<FeedingPeriod> findBySemesterSemesterId(Integer semesterId);
 
-  /**
-   * Find all periods ordered by created_at descending (for admin listing).
-   */
-  List<FeedingPeriod> findAllByOrderByCreatedAtDesc();
+    /**
+     * Check if a feeding period already exists for a semester.
+     */
+    boolean existsBySemesterSemesterId(Integer semesterId);
+
+    /**
+     * Find all ACTIVE feeding periods.
+     */
+    List<FeedingPeriod> findByStatus(FeedingPeriod.PeriodStatus status);
+
+    /**
+     * Find all periods ordered by created_at descending (for admin listing).
+     */
+    List<FeedingPeriod> findAllByOrderByCreatedAtDesc();
 }

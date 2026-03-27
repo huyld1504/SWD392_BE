@@ -7,22 +7,22 @@ import java.time.LocalDateTime;
 
 public class FeedingPeriodSpecification {
 
-  private FeedingPeriodSpecification() {
-  }
+    private FeedingPeriodSpecification() {
+    }
 
-  public static Specification<FeedingPeriod> hasStatus(FeedingPeriod.PeriodStatus status) {
-    return (root, query, cb) -> cb.equal(root.get("status"), status);
-  }
+    public static Specification<FeedingPeriod> hasStatus(FeedingPeriod.PeriodStatus status) {
+        return (root, query, cb) -> cb.equal(root.get("status"), status);
+    }
 
-  public static Specification<FeedingPeriod> hasTriggerSource(String triggerSource) {
-    return (root, query, cb) -> cb.equal(root.get("triggerSource"), triggerSource);
-  }
+    public static Specification<FeedingPeriod> hasSemesterCode(String semesterCode) {
+        return (root, query, cb) -> cb.equal(root.get("semester").get("semesterCode"), semesterCode);
+    }
 
-  public static Specification<FeedingPeriod> createdAfter(LocalDateTime fromDate) {
-    return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), fromDate);
-  }
+    public static Specification<FeedingPeriod> createdAfter(LocalDateTime fromDate) {
+        return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), fromDate);
+    }
 
-  public static Specification<FeedingPeriod> createdBefore(LocalDateTime toDate) {
-    return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), toDate);
-  }
+    public static Specification<FeedingPeriod> createdBefore(LocalDateTime toDate) {
+        return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), toDate);
+    }
 }

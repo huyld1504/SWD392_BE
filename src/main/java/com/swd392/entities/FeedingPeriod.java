@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,25 +26,28 @@ public class FeedingPeriod {
     @Column(name = "period_id")
     private Integer periodId;
 
-    @Column(name = "period_name", length = 50)
-    private String periodName;
+    // ===== Semester reference =====
+    @ManyToOne
+    @JoinColumn(name = "semester_id", nullable = false)
+    private Semester semester;
 
+    // ===== Feeding config =====
     @Column(name = "grant_amount", precision = 12, scale = 2)
     private BigDecimal grantAmount;
 
-    @Column(name = "executed_at")
-    private LocalDateTime executedAt;
+    // ===== Running stats (updated each daily feeding run) =====
+    @Column(name = "total_coins_fed", precision = 12, scale = 2)
+    private BigDecimal totalCoinsFed = BigDecimal.ZERO;
 
-    @Column(name = "scheduled_at")
-    private LocalDateTime scheduledAt;
+    @Column(name = "total_users_fed")
+    private Integer totalUsersFed = 0;
 
+    // ===== Status =====
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PeriodStatus status = PeriodStatus.PENDING;
+    private PeriodStatus status = PeriodStatus.ACTIVE;
 
-    @Column(name = "trigger_source", length = 30)
-    private String triggerSource;
-
+    // ===== Audit =====
     @ManyToOne
     @JoinColumn(name = "created_by")
     private User createdBy;
@@ -52,13 +56,18 @@ public class FeedingPeriod {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // ===== Relationships =====
     @OneToMany(mappedBy = "feedingPeriod", cascade = CascadeType.ALL)
     private List<UserFeeding> userFeedings = new ArrayList<>();
 
     public enum PeriodStatus {
-        PENDING, // Đã tạo, chưa chạy
-        EXECUTING, // Đang xử lý
-        COMPLETED, // Hoàn thành
-        FAILED // Lỗi giữa chừng
+        PENDING,      // Default status if semester hasn't started yet
+        ACTIVE,       // Kỳ đang hoạt động, scheduler feed hàng ngày
+        COMPLETED,    // Kỳ đã kết thúc (auto hoặc manual)
+        CANCELLED     // Bị hủy bởi admin
     }
 }

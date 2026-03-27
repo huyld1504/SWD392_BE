@@ -35,6 +35,7 @@ public class DonationServiceImpl implements DonationService {
   private final UserRepository userRepository;
   private final ArticleRepository articleRepository;
   private final DonationMapper donationMapper;
+  private final SemesterRepository semesterRepository;
 
   @Override
   @Transactional
@@ -87,7 +88,10 @@ public class DonationServiceImpl implements DonationService {
     walletRepository.save(senderWallet);
     walletRepository.save(receiverWallet);
 
-    // 8. Create double-entry Transaction records
+    // 8. Find current active semester for tracking
+    Semester currentSemester = findCurrentSemester();
+
+    // 9. Create double-entry Transaction records
     // Transaction #1: Sender's DONATE record (money going out)
     Transaction senderTransaction = new Transaction();
     senderTransaction.setSenderWallet(senderWallet);
@@ -95,6 +99,7 @@ public class DonationServiceImpl implements DonationService {
     senderTransaction.setAmount(request.getAmount());
     senderTransaction.setCurrency(Transaction.Currency.BLUE);
     senderTransaction.setTransactionType(Transaction.TransactionType.DONATE);
+    senderTransaction.setSemester(currentSemester);
     transactionRepository.save(senderTransaction);
 
     // Transaction #2: Receiver's RECEIVE_DONATE record (money coming in)
@@ -104,6 +109,7 @@ public class DonationServiceImpl implements DonationService {
     receiverTransaction.setAmount(request.getAmount());
     receiverTransaction.setCurrency(Transaction.Currency.BLUE);
     receiverTransaction.setTransactionType(Transaction.TransactionType.RECEIVE_DONATE);
+    receiverTransaction.setSemester(currentSemester);
     transactionRepository.save(receiverTransaction);
 
     // 9. Create Donation record (linked to sender's transaction)
@@ -199,5 +205,17 @@ public class DonationServiceImpl implements DonationService {
         .pageSize(size)
         .data(dtos)
         .build();
+  }
+
+  /**
+   * Find the current active semester based on today's date.
+   * Returns null if no active semester covers today.
+   */
+  private Semester findCurrentSemester() {
+    java.time.LocalDate today = java.time.LocalDate.now();
+    return semesterRepository
+        .findByStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            Semester.SemesterStatus.ACTIVE, today, today)
+        .stream().findFirst().orElse(null);
   }
 }
